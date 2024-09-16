@@ -8,20 +8,36 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <stdbool.h>
 //#include "shell_list.h"
 
+#include <stdio.h>
+#include <string.h>
 #define MAX 2048
 
 
-int comread(int argc, char * argv[]) {
-    char line[MAX];
-    while (1) {
-        printf("#) ");
-        fgets(line, MAX, stdin);
-        // enter line into command history
+char DoCommand(char *pcs[],tList c,bool terminate){
+    int i=0;
+    while((pcs[i]=strtok(NULL,"\t\n"))!=NULL)
+    {
+        if(findItemS(pcs[i],c)== NULL){
+            break;
+        }else{
+
+        }
+
+        i++;
     }
 }
 
-/*
-
+int comread(int argc,char *argv[]){
+    char line[MAX];
+    char *pcs[MAX/2];
+    while(1){
+        printf("#)");
+        fgets(line,MAX,stdin);
+        if(BreakLine(line,pcs)==0)
+            continue;
+        DoCommand(pcs);
+    }
+}
 
 void comprocess{
 
@@ -36,9 +52,15 @@ int main(){
     return 0;
 }
 
+//--------------------------------------------------------------------------------------
+
+char authors(char input){
+    if (pcs[1] != NULL)
+        if
+
+}
 
 
-/*
 /*
 void Cmd_open (char * tr[])
 {

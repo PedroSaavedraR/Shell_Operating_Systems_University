@@ -6,6 +6,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "stdbool.h"
+#include "string.h"
+#define MAX 2048
 
 typedef int tItem;
 
@@ -31,12 +33,14 @@ tPos previous (tPos p, tList L);
 
 tPos nextU (tPos p, tList L);
 
-bool insertItemU (tItem d, tList* L);
+bool insertItem (tItem d, tList* L);
 
 void deleteAtPositionU (tPos p, tList* L);
 
 tItem getItemU (tPos p, tList L);
 
 void updateItemU (tItem d, tPos p, tList* L);
+
+tPos findItem (tItem , tList L);
 
 #endif //S0_P0_SHELL_LIST_H
