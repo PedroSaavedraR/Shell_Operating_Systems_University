@@ -9,7 +9,7 @@
 #include "string.h"
 #define MAX 2048
 
-typedef int tItem;
+typedef char tItem[MAX];
 
 typedef struct tNode* tPos;
 
@@ -36,8 +36,6 @@ tPos nextU (tPos p, tList L);
 bool insertItem (tItem d, tList* L);
 
 void deleteAtPositionU (tPos p, tList* L);
-
-tItem getItemU (tPos p, tList L);
 
 void updateItemU (tItem d, tPos p, tList* L);
 

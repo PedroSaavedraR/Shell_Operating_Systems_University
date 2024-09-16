@@ -6,12 +6,22 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-//#include "shell_list.h"
+#include "shell_list.h"
 
 #include <stdio.h>
 #include <string.h>
 #define MAX 2048
 
+int BreakLine(char *lin,char *pz[]){
+    int i;
+
+    if((pz[0]=strtok(lin,"\t\n"))==NULL)
+        return 0;
+    i=1;
+    while((pz[i]=strtok(NULL,"\t\n"))!=NULL)
+        i++;
+    return 1;
+}
 
 char DoCommand(char *pcs[],tList c,bool terminate){
     int i=0;
@@ -39,12 +49,17 @@ int comread(int argc,char *argv[]){
     }
 }
 
-void comprocess{
-
-}; */
+void ccomlist(tList c){
+    createEmptyList(&c);
+    insertItemU(1,&c);
+    insertItemU(1,&c);
+}
 
 int main(){
     bool terminate = false;
+    tList c,h;
+    ccomlist(c);
+    createEmptyList(&h);
     while(!terminate){
         comread(0,0);
         //process read comment from command history
