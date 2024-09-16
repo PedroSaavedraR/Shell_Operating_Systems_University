@@ -38,7 +38,7 @@ int main(){
 
 
 
-
+/*
 /*
 void Cmd_open (char * tr[])
 {
