@@ -41,4 +41,6 @@ void updateItemU (tItem d, tPos p, tList* L);
 
 tPos findItem (tItem , tList L);
 
+void deleteList(tList L);
+
 #endif //S0_P0_SHELL_LIST_H
