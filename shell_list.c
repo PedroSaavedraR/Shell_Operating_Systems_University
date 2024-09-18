@@ -16,8 +16,8 @@ bool isEmptyList (tList L){
 tPos first (tList L){
     return L;
 }
-//abcde
 
+//abcde
 
 tPos findItem (tItem d, tList L){
     tPos p;
@@ -28,3 +28,14 @@ tPos findItem (tItem d, tList L){
         return NULL;
 }
 
+void deleteAtPositionU (tPos p, tList* L){}
+
+void deleteList(tList L){
+   tPos p = L.next;
+   while(p != NULL){
+   deleteAtPositionU(L,L);
+   L=p;
+   p=p.next;
+   }
+   free(L);
+}
