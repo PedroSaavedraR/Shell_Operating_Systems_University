@@ -31,13 +31,12 @@ tPos last (tList L);
 
 tPos previous (tPos p, tList L);
 
-tPos nextU (tPos p, tList L);
+tPos next (tPos p, tList L);
 
 bool insertItem (tItem d, tList* L);
+bool createNode(tPosL *p);
 
 void deleteAtPositionU (tPos p, tList* L);
-
-void updateItemU (tItem d, tPos p, tList* L);
 
 tPos findItem (tItem , tList L);
 
