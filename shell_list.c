@@ -59,6 +59,16 @@ tPos findItem (tItem d, tList L){
         return NULL;
 }
 
+int BreakLine(char *lin,char *pz[]){
+    int i;
+
+    if((pz[0]=strtok(lin,"\t\n"))==NULL)
+        return 0;
+    i=1;
+    while((pz[i]=strtok(NULL,"\t\n"))!=NULL)
+        i++;
+    return 1;
+}
 void deleteAtPosition (tPosL p, tList *L){
     tPosL q;
     if (p == *L) {

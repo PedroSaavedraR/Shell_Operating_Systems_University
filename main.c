@@ -27,13 +27,10 @@ char DoCommand(char *pcs[],tList c,bool terminate){
     int i=0;
     while((pcs[i]=strtok(NULL,"\t\n"))!=NULL)
     {
-        tItem p = findItemS(pcs[i],c);
-        if(p == NULL){
+        if(findItemS(pcs[i],c)== NULL){
             break;
         }else{
-            p.com();
-            addh(p,h);
-            // add command to history
+
         }
 
         i++;
@@ -56,10 +53,6 @@ void ccomlist(tList c){
     createEmptyList(&c);
     insertItemU(1,&c);
     insertItemU(1,&c);
-}
-
-void addh(tItem c,tList h){
-    //insert funcion of a list
 }
 
 int main(){
