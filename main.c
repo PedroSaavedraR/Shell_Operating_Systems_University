@@ -7,37 +7,33 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <string.h>
 #include <stdbool.h>
 #include "shell_list.h"
-
-#include <stdio.h>
-#include <string.h>
+#include "shell_list.c"
+#include "Commands.h"
 #define MAX 2048
 
-int BreakLine(char *lin,char *pz[]){
-    int i;
-
-    if((pz[0]=strtok(lin,"\t\n"))==NULL)
-        return 0;
-    i=1;
-    while((pz[i]=strtok(NULL,"\t\n"))!=NULL)
-        i++;
-    return 1;
+void addhistoric(char line[MAX],tList h){
+    tItem aux;
+    strcpy(aux.com,line);
+    aux.command = NULL;
+    insertItem(aux,&h);
 }
 
-char DoCommand(char *pcs[],tList c,bool terminate){
+char DoCommand(char *pcs[MAX/2],tList c,bool terminate){
     int i=0;
+    tItem k;
     while((pcs[i]=strtok(NULL,"\t\n"))!=NULL)
     {
-        if(findItemS(pcs[i],c)== NULL){
+        tPos t = findItem(pcs[i],c);//find command in command list
+        if(t == NULL){
             break;
         }else{
-
+           k = getItem(t,c);
+           k.command(&pcs);
         }
-
-        i++;
     }
 }
 
-int comread(int argc,char *argv[]){
+int comread(int argc,char *argv[],tList c,tList h,bool t){
     char line[MAX];
     char *pcs[MAX/2];
     while(1){
@@ -45,35 +41,33 @@ int comread(int argc,char *argv[]){
         fgets(line,MAX,stdin);
         if(BreakLine(line,pcs)==0)
             continue;
-        DoCommand(pcs);
-    }
+        else{
+            addhistoric(line,h);
+            DoCommand(pcs,c,t);
+    }}
 }
 
+
 void ccomlist(tList c){
-    createEmptyList(&c);
-    insertItemU(1,&c);
-    insertItemU(1,&c);
+    struct tItem com_authors = {"authors",authors};
+    insertItem(com_authors,&c);
+
 }
 
 int main(){
-    bool terminate = false;
+    bool t= false;
     tList c,h;
-    ccomlist(c);
+    createEmptyList(&c);
     createEmptyList(&h);
-    while(!terminate){
-        comread(0,0);
+    ccomlist(c);
+    while(!t){
+        comread(0,0,c,h,t);
         //process read comment from command history
     }
     return 0;
 }
 
 //--------------------------------------------------------------------------------------
-
-char authors(char input){
-    if (pcs[1] != NULL)
-        if
-
-}
 
 
 /*

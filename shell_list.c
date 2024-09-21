@@ -1,7 +1,5 @@
 #include "shell_list.h"
 
-
-
 void createEmptyList (tList *L){
     *L = NULL; // sets the address pointed to by L to NULL
 }
@@ -14,20 +12,20 @@ tPos first (tList L){
     return L;
 }
 
-tPosL last (tList L){
-    tPosL p;
-    for(p=L; p->next != LNULL; p=p->next);
+tPos last (tList L){
+    tPos p;
+    for(p=L; p->next != NULL; p=p->next);
     return p;
 }
 
-tPosL next (tPosL p, tList L){
+tPos next (tPos p, tList L){
     return p->next;
 }
 
-tPosL previous (tPosL p, tList L){
-    tPosL q;
+tPos previous (tPos p, tList L){
+    tPos q;
     if (p==L)
-        return LNULL;
+        return NULL;
     else{
         for (q=L; q->next != p ; q=q->next);
         return q;
@@ -35,7 +33,7 @@ tPosL previous (tPosL p, tList L){
 }
 
 bool InsertItem(tItem d,tList L){
-    tPosS aux; 
+    tPos aux;
     if(!createNode(&aux)){
         return false; 
     } else{
@@ -45,37 +43,43 @@ bool InsertItem(tItem d,tList L){
         return true;
     }
 }
+
+
 bool createNode(tPos *p){
     *p = malloc(sizeof(struct tNode)); //allocates memory for a new node
     return *p != NULL; //if memory allocation was successful return true, else return false
 }
 
-tPos findItem (tItem d, tList L){
+tPos findItem (char *d, tList L){
     tPos p;
-    for(p=L; (p!= NULL)&&(strcmp(d, p->data)>0); p=p->next); //the comparison depends on tItem
-    if(p!= NULL && strcmp(d,p->data)==0)
+    for(p=L; (p!= NULL)&&(strcmp(d, p->data.com)>0); p=p->next); //the comparison depends on tItem
+    if(p!= NULL && strcmp(d,p->data.com)==0)
         return p;
     else
         return NULL;
 }
 
+tItem getItem (tPos p, tList L){
+    return p->data;
+}
+
 int BreakLine(char *lin,char *pz[]){
     int i;
 
-    if((pz[0]=strtok(lin,"\t\n"))==NULL)
+    if((pz[0]=strtok(lin," \t\n"))==NULL)
         return 0;
     i=1;
-    while((pz[i]=strtok(NULL,"\t\n"))!=NULL)
+    while((pz[i]=strtok(NULL," \t\n"))!=NULL)
         i++;
-    return 1;
+    return i;
 }
-void deleteAtPosition (tPosL p, tList *L){
-    tPosL q;
+void deleteAtPosition (tPos p, tList *L){
+    tPos q;
     if (p == *L) {
         *L = (*L) -> next;
-    } else if (p->next == LNULL) {//delete last element
+    } else if (p->next == NULL) {//delete last element
         for (q = *L; q->next != p; q = q->next);//find position in front of p
-        q->next = LNULL;
+        q->next = NULL;
     } else {//delete from the middle
         q = p->next;
         p->data = q->data;
@@ -84,13 +88,14 @@ void deleteAtPosition (tPosL p, tList *L){
     }
     free(p);
 }
-
+/*
 void deleteList(tList L){
-   tPos p = L.next;
+   tPos p = L->next;
    while(p != NULL){
    deleteAtPositionU(L,L);
    L=p;
-   p=p.next;
+   p=p->next;
    }
    free(L);
 }
+*/
