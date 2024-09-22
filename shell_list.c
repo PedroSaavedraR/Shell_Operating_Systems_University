@@ -52,8 +52,8 @@ bool createNode(tPos *p){
 
 tPos findItem (char *d, tList L){
     tPos p;
-    for(p=L; (p!= NULL)&&(strcmp(d, p->data.com)>0); p=p->next); //the comparison depends on tItem
-    if(p!= NULL && strcmp(d,p->data.com)==0)
+    for(p=L; (p!= NULL)&&(strcmp(d, p->data.command)>0); p=p->next); //the comparison depends on tItem
+    if(p!= NULL && strcmp(d,p->data.command)==0)
         return p;
     else
         return NULL;

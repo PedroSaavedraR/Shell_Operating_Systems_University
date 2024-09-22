@@ -11,6 +11,13 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include "Commands.h"
 #define MAX 2048
 
+void ccomlist(tList c, tItem k[15]){
+    createEmptyList(*c);
+    for(int i=0;i<16;i++){
+        insertItem(k[i],&c);
+    }
+};
+
 void addhistoric(char line[MAX],tList h){
     tItem aux;
     strcpy(aux.com,line);
@@ -28,7 +35,7 @@ char DoCommand(char *pcs[MAX/2],tList c,bool terminate){
             break;
         }else{
            k = getItem(t,c);
-           k.command(&pcs);
+           k.cmd(&pcs);
         }
     }
 }
@@ -48,18 +55,11 @@ int comread(int argc,char *argv[],tList c,tList h,bool t){
 }
 
 
-void ccomlist(tList c){
-    struct tItem com_authors = {"authors",authors};
-    insertItem(com_authors,&c);
-
-}
-
 int main(){
     bool t= false;
     tList c,h;
-    createEmptyList(&c);
     createEmptyList(&h);
-    ccomlist(c);
+    ccomlist(c,&commands[15]);
     while(!t){
         comread(0,0,c,h,t);
         //process read comment from command history

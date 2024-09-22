@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "shell_list.h"
 #include "shell_list.c"
-#include <sys/utsname.h>
 
 
 void authors (char *c) {
@@ -21,7 +20,19 @@ void authors (char *c) {
         printf("ERROR");
     }
 
-
+void help (char *c, tList *coms) {
+    char *s[MAX];
+    int b = BreakLine(c, s);
+    if (b == 1 && strcmp(s[0], "help") == 0) {
+        printf(""); //Print the whole command list
+    }
+    if (b == 2) {
+        for (tPos l = first(*coms);l->next != NULL;l = l->next) {
+        if (strcmp(s[1], l->data.command) == 0)
+            printf("%s", l->data.help);
+    }
+    }
+}
 /*
 void date (char c){
     time_t time_now;
@@ -33,4 +44,6 @@ void infosys () {
 
 }
 */
+
+
 
