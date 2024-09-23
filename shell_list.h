@@ -13,7 +13,7 @@
 
 typedef struct tItem{
     char command[MAX];
-    void (*cmd)();
+    void (*cmd)(char**);//said in class to include pointer to pointer to char
     char help[MAX];
 } tItem;
 
