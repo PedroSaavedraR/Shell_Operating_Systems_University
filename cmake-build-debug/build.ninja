@@ -55,12 +55,6 @@ build CMakeFiles/S0_P0.dir/main.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Use
   OBJECT_DIR = CMakeFiles\S0_P0.dir
   OBJECT_FILE_DIR = CMakeFiles\S0_P0.dir
 
-build CMakeFiles/S0_P0.dir/shell_list.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Users/pedro/CLionProjects/SO-P0/shell_list.c || cmake_object_order_depends_target_S0_P0
-  DEP_FILE = CMakeFiles\S0_P0.dir\shell_list.c.obj.d
-  FLAGS = -g -std=gnu99 -fdiagnostics-color=always
-  OBJECT_DIR = CMakeFiles\S0_P0.dir
-  OBJECT_FILE_DIR = CMakeFiles\S0_P0.dir
-
 build CMakeFiles/S0_P0.dir/Commands.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Users/pedro/CLionProjects/SO-P0/Commands.c || cmake_object_order_depends_target_S0_P0
   DEP_FILE = CMakeFiles\S0_P0.dir\Commands.c.obj.d
   FLAGS = -g -std=gnu99 -fdiagnostics-color=always
@@ -73,6 +67,12 @@ build CMakeFiles/S0_P0.dir/test.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Use
   OBJECT_DIR = CMakeFiles\S0_P0.dir
   OBJECT_FILE_DIR = CMakeFiles\S0_P0.dir
 
+build CMakeFiles/S0_P0.dir/List.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Users/pedro/CLionProjects/SO-P0/cmake-build-debug/List.c || cmake_object_order_depends_target_S0_P0
+  DEP_FILE = CMakeFiles\S0_P0.dir\List.c.obj.d
+  FLAGS = -g -std=gnu99 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\S0_P0.dir
+  OBJECT_FILE_DIR = CMakeFiles\S0_P0.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target S0_P0
@@ -81,7 +81,7 @@ build CMakeFiles/S0_P0.dir/test.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Use
 #############################################
 # Link the executable S0_P0.exe
 
-build S0_P0.exe: C_EXECUTABLE_LINKER__S0_P0_Debug CMakeFiles/S0_P0.dir/main.c.obj CMakeFiles/S0_P0.dir/shell_list.c.obj CMakeFiles/S0_P0.dir/Commands.c.obj CMakeFiles/S0_P0.dir/test.c.obj
+build S0_P0.exe: C_EXECUTABLE_LINKER__S0_P0_Debug CMakeFiles/S0_P0.dir/main.c.obj CMakeFiles/S0_P0.dir/Commands.c.obj CMakeFiles/S0_P0.dir/test.c.obj CMakeFiles/S0_P0.dir/List.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\S0_P0.dir

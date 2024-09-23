@@ -45,5 +45,12 @@ void infosys () {
 }
 */
 
+void chdir (char *tr[]){
+    if(tr[0]==NULL)
+        printf("%s\n", getcwd(actualdir, MAX));
+    else
+        if(chdir())
+
+}
 
 

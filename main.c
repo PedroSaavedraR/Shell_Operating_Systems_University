@@ -6,37 +6,20 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include "shell_list.h"
-#include "shell_list.c"
+#include "List.h"
+#include "List.c"
 #include "Commands.h"
 #define MAX 2048
 
-void ccomlist(tList c, tItem k[15]){
-    createEmptyList(*c);
-    for(int i=0;i<16;i++){
-        insertItem(k[i],&c);
-    }
-};
 
-void addhistoric(char line[MAX],tList h){
-    tItem aux;
-    strcpy(aux.com,line);
-    aux.command = NULL;
-    insertItem(aux,&h);
-}
-
-char DoCommand(char *pcs[MAX/2],tList c,bool terminate){
-    int i=0;
-    tItem k;
-    while((pcs[i]=strtok(NULL,"\t\n"))!=NULL)
-    {
-        tPos t = findItem(pcs[i],c);//find command in command list
-        if(t == NULL){
-            break;
-        }else{
-           k = getItem(t,c);
-           k.cmd(&pcs);
-        }
+void DoCommand(char *pcs[]){
+    int i;
+    if(pcs[0] == NULL)
+        return;
+    for(i=0;commands[i].cmd != NULL;i++){
+        if(!strcmp(pcs[0],commands[i].command)){
+            (commands[i].cmd(pcs+1));
+            return;
     }
 }
 
@@ -54,14 +37,16 @@ int comread(int argc,char *argv[],tList c,tList h,bool t){
     }}
 }
 
-
-int main(){
-    bool t= false;
-    tList c,h;
-    createEmptyList(&h);
-    ccomlist(c,&commands[15]);
-    while(!t){
-        comread(0,0,c,h,t);
+int main(int argc, char *argv[]){
+    char line [MAX];
+    char *pcs[MAX/2];
+    InitHistoric(&L);
+    while(1){
+        printf("-> ");
+        fgets(line, MAX, stdin);
+        AddHistoricElement(&L,line);
+        BreakLine(line,pcs);
+        DoCommand(pcs);
         //process read comment from command history
     }
     return 0;
