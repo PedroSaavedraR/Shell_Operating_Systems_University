@@ -16,7 +16,7 @@ void pid(char**);
 void ppid(char**);
 void cd(char**);
 void date (char **c);
-void historic(char**);
+void historic(char**, HLIST);
 void open(char**);
 void close(char**);
 void dup(char**);

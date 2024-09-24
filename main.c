@@ -11,32 +11,6 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include "Commands.h"
 #define MAX 2048
 
-
-void DoCommand(char *pcs[]){
-    int i;
-    if(pcs[0] == NULL)
-        return;
-    for(i=0;commands[i].cmd != NULL;i++){
-        if(!strcmp(pcs[0],commands[i].command)){
-            (commands[i].cmd(pcs+1));
-            return;
-    }
-}
-
-int comread(int argc,char *argv[],tList c,tList h,bool t){
-    char line[MAX];
-    char *pcs[MAX/2];
-    while(1){
-        printf("#)");
-        fgets(line,MAX,stdin);
-        if(BreakLine(line,pcs)==0)
-            continue;
-        else{
-            addhistoric(line,h);
-            DoCommand(pcs,c,t);
-    }}
-}
-
 int main(int argc, char *argv[]){
     char line [MAX];
     char *pcs[MAX/2];

@@ -6,7 +6,7 @@
 
 void authors (char *c) {
     char *s[MAX];
-    int b = BreakLine(c, s);
+    int b = BreakLine(*c, s);
     if (b == 1 && strcmp(s[0], "authors") == 0) {
         printf("Jose Martinez Estevez jose.martinez.estevez\nPedro Saavedra Rubinos pedro.saavedra.rubinos");
     }
@@ -45,12 +45,20 @@ void infosys () {
 }
 */
 
-void chdir (char *tr[]){
-    if(tr[0]==NULL)
-        printf("%s\n", getcwd(actualdir, MAX));
-    else
-        if(chdir())
-
+void cd (char *tr[]) {
+    char actualdir[MAX];
+    if (tr[1] == NULL) {
+        if (getcwd(actualdir, MAX) == NULL) //if the directory is not found
+            printf("ERROR");
+        else
+            printf("%s", actualdir);
+    } else {
+        if (chdir(tr[1]) == 0) //chdir returns 0 if the directory change was successful and -1 if not
+            printf("%s", tr[1]); //tr[1] is the new actual directory
+        else
+            printf("ERROR");
+    }
 }
+
 
 
