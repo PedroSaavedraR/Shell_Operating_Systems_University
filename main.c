@@ -9,6 +9,7 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include "List.h"
 #include "List.c"
 #include "Commands.h"
+#include "Commands.c"
 #define MAX 2048
 
 int main(int argc, char *argv[]){
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]){
     char *pcs[MAX/2];
     InitHistoric(&L);
     while(1){
-        printf("-> ");
+        printf("#) ");
         fgets(line, MAX, stdin);
         AddHistoricElement(&L,line);
         BreakLine(line,pcs);

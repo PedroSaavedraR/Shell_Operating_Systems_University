@@ -1,6 +1,7 @@
 #ifndef S0_P0_COMMANDS_H
 #define S0_P0_COMMANDS_H
-
+#define MAX 2048
+#include "List.c"
 
 typedef struct tItem{
     char command[MAX];
