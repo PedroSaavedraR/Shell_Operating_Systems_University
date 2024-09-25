@@ -97,7 +97,11 @@ void historic(char **c, HLIST l) {
             }
     } else if (b == 2) {
         int j = atoi(c[b]);
+        if(j>0)
         DoCommand(&l.command[j]);
+        else
+            for (i = 0; i <= abs(j); i++) {
+            printf("%d %s\n", i, l.command[i]);
         }
     }
 
