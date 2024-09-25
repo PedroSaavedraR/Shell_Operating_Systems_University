@@ -9,11 +9,12 @@
 
 int main (){
 
-
+/*
     char command[MAX] = "authors";
     authors(command);
 
-    help("help authors");
+    //help("help authors");
 
-    return 0;
-}
+    return 0;*/
+
+ }

@@ -2,19 +2,22 @@
 José Martínez Estévez     jose.martinez.estevez@udc.es
 Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 */
-
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include "List.h"
-#include "List.c"
-#include "Commands.h"
-#include "Commands.c"
 #define MAX 2048
+
+#include <time.h>
+#include <stdio.h>
+#include "List.h"
+#include "Commands.h"
+#include <unistd.h>
+#include <stdlib.h>
+//#include <sys/utsname.h>
+
+
 
 int main(int argc, char *argv[]){
     char line [MAX];
     char *pcs[MAX/2];
+    HLIST L;
     InitHistoric(&L);
     while(1){
         printf("#) ");

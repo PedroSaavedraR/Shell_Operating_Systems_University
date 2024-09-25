@@ -67,7 +67,7 @@ build CMakeFiles/S0_P0.dir/test.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Use
   OBJECT_DIR = CMakeFiles\S0_P0.dir
   OBJECT_FILE_DIR = CMakeFiles\S0_P0.dir
 
-build CMakeFiles/S0_P0.dir/List.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Users/pedro/CLionProjects/SO-P0/cmake-build-debug/List.c || cmake_object_order_depends_target_S0_P0
+build CMakeFiles/S0_P0.dir/List.c.obj: C_COMPILER__S0_P0_unscanned_Debug C$:/Users/pedro/CLionProjects/SO-P0/List.c || cmake_object_order_depends_target_S0_P0
   DEP_FILE = CMakeFiles\S0_P0.dir\List.c.obj.d
   FLAGS = -g -std=gnu99 -fdiagnostics-color=always
   OBJECT_DIR = CMakeFiles\S0_P0.dir

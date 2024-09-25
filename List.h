@@ -9,10 +9,10 @@ struct HISTORICLIST{
 
 typedef struct HISTORICLIST HLIST;
 
-int IsHistoricEmpty(HLIST *l);
-void InitHistoric (HLIST *l);
-int AddHistoricElement(HLIST *l, char * cmd);
-int ClearHistoric (HLIST *l);
-void PrintHistoric (HLIST *l);
+int IsHistoricEmpty(HLIST*);
+void InitHistoric (HLIST*);
+int AddHistoricElement(HLIST*, char *);
+int ClearHistoric (HLIST*);
+void PrintHistoric (HLIST*);
 
 #endif //S0_P0_LIST_H

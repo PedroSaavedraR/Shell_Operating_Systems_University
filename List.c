@@ -1,7 +1,7 @@
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "List.h"
-#include "stdio.h"
+#include <stdio.h>
 #define MAX 2048
 
 int IsHistoricEmpty(HLIST *l){
@@ -14,7 +14,7 @@ void InitHistoric (HLIST *l){
 
 int AddHistoricElement(HLIST *l, char * cmd){
     if(l->counter == MAX-1){
-        errno=ENOSPC;//error number for not enough space
+        errno=ENOSPC; //error number for not enough space
         return -1;
     }
     if((l->command[l->counter]=strdup (cmd))==NULL)

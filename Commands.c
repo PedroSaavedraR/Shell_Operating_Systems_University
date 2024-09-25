@@ -1,9 +1,10 @@
 #include <time.h>
 #include <stdio.h>
 #include "Commands.h"
-#include "List.c"
+#include "List.h"
 #include <unistd.h>
-#include <sys/utsname.h>
+#include <stdlib.h>
+//#include <sys/utsname.h>
 
 
 struct tItem commands[15] ={
@@ -13,9 +14,9 @@ struct tItem commands[15] ={
         {"cd", cd, "Changes the current working directory of the shell to dir (using the chdir system call). When invoked without arguments it prints the current working directory (using the getcwd system call"},
         {"date", date, "Prints the current date in the format DD/MM/YYYY and the current time in the format hh:mm:ss"},
         {"historic",historic,"Shows the historic of commands executed by this shell.\n– historic Prints all the commands that have been input with their order number\n– historic N Repeats command number N (from historic list)\n– historic -N Prints only the lastN comands"},
-        {"open",open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode."},
-        {"close",close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
-        {"dupe",dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
+        {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode."},
+        {"close",Close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
+        {"dupe",Dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
         {"infosys",infosys,"Prints information on the machine running the shell (as obtained via the uname system call/library function)"},
         {"help",help," help displays a list of available commands. help cmd gives a brief help on the usage of command cmd"},
         {"quit",quit,"Ends the shell"},
@@ -23,7 +24,7 @@ struct tItem commands[15] ={
         {"bye",bye,"Ends the shell"},
         {"\0", NULL, "\0"},
 };
-HLIST L;
+
 
 int BreakLine(char *lin,char *pz[]){
     int i;
@@ -88,18 +89,18 @@ void historic(char **c, HLIST l) {
     int i;
     int b = BreakLine(*c, s);
     if (b == 1) {
-        if (IsHistoricEmpty(l))
+        if (IsHistoricEmpty(&l))
             return;
         else
             for (i = 0; i <= l.counter; i++) {
-                printf("%d %s\n", i, commands[i].command);
+                printf("%d %s\n", i, l.command[i]);
             }
     } else if (b == 2) {
         int j = atoi(c[b]);
-        DoCommand(commands[j].command);
+        DoCommand(&l.command[j]);
         }
     }
-}
+
 
 
 void pid(char *tr[]) {
@@ -107,9 +108,9 @@ void pid(char *tr[]) {
 }
 
 
-void ppid(char *tr[]){
+/*void ppid(char *tr[]){
     printf("%d\n", getppid());
-}
+}*/
 
 void quit(){
     exit(0);
@@ -135,18 +136,43 @@ void infosys () {
 
 void cd (char *tr[]) {
     char actualdir[MAX];
-    if (tr[1] == NULL) {
+    if (tr[0] == NULL) {
         if (getcwd(actualdir, MAX) == NULL) //if the directory is not found
             printf("ERROR");
         else
             printf("%s", actualdir);
     } else {
-        if (chdir(tr[1]) == 0) //chdir returns 0 if the directory change was successful and -1 if not
-            printf("%s", tr[1]); //tr[1] is the new actual directory
+        if (chdir(tr[0]) == 0) //chdir returns 0 if the directory change was successful and -1 if not
+            printf("%s", tr[0]); //tr[1] is the new actual directory
         else
             printf("ERROR");
     }
 }
 
+void Open (char * tr[])
+{
+    int i,df, mode=0;
+
+    if (tr[0]==NULL) { /*no hay parametro
+        ..............ListarFicherosAbiertos...............
+        return;
+    }
+    for (i=1; tr[i]!=NULL; i++)
+        if (!strcmp(tr[i],"cr")) mode|=O_CREAT;
+        else if (!strcmp(tr[i],"ex")) mode|=O_EXCL;
+        else if (!strcmp(tr[i],"ro")) mode|=O_RDONLY;
+        else if (!strcmp(tr[i],"wo")) mode|=O_WRONLY;
+        else if (!strcmp(tr[i],"rw")) mode|=O_RDWR;
+        else if (!strcmp(tr[i],"ap")) mode|=O_APPEND;
+        else if (!strcmp(tr[i],"tr")) mode|=O_TRUNC;
+        else break;
+
+    if ((df=open(tr[0],mode,0777))==-1)
+        perror ("Imposible abrir fichero");
+    else{
+        ...........AnadirAFicherosAbiertos (descriptor...modo...nombre....)....
+        printf ("Anadida entrada a la tabla ficheros abiertos..................",......);
+    }
+*/
 
 
