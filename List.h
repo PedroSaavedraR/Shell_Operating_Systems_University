@@ -7,12 +7,16 @@ struct HISTORICLIST{
     int counter;
 };
 
+
 typedef struct HISTORICLIST HLIST;
 
 int IsHistoricEmpty(HLIST*);
 void InitHistoric (HLIST*);
 int AddHistoricElement(HLIST*, char *);
-int ClearHistoric (HLIST*);
+void ClearHistoric (HLIST*);
 void PrintHistoric (HLIST*);
+void PrintHistoricLast(HLIST *,int);
+char* GetHistoricElement(HLIST *l,int n);
+int GetLength(HLIST *L);
 
 #endif //S0_P0_LIST_H

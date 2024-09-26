@@ -2,6 +2,7 @@
 #include <string.h>
 #include "List.h"
 #include <stdio.h>
+#include <errno.h>
 #define MAX 2048
 
 int IsHistoricEmpty(HLIST *l){
@@ -23,7 +24,7 @@ int AddHistoricElement(HLIST *l, char * cmd){
     return l->counter;
 }
 
-int ClearHistoric (HLIST *l){
+void ClearHistoric (HLIST *l){
     int i;
     for (i=0; i<l->counter;i++)
         free(l->command[i]);
@@ -32,7 +33,20 @@ int ClearHistoric (HLIST *l){
 void PrintHistoric (HLIST *l){
     int i;
     for(i=0; i<l->counter;i++)
-        printf("%d->%s\n", i, l->command[i]);
+        printf("%d->%s\n", i , l->command[i]);
+}
 
+void PrintHistoricLast(HLIST *l,int n){
+    int i;
+    for(i=l->counter -1;i>l->counter -n -1;i--){
+        printf("%d->%s\n",i, l->command[i]);
+}}
 
+char* GetHistoricElement(HLIST *l,int n){
+    return l->command[n];
+
+}
+
+int GetLength(HLIST *l){
+    return l->counter;
 }
