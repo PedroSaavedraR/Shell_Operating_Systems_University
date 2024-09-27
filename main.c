@@ -263,7 +263,7 @@ void Dup (char ** tr[])
     sprintf (aux,"dup %d (%s)",df, p);
     .......AnadirAFicherosAbiertos......duplicado......aux.....fcntl(duplicado,F_GETFL).....;
 };
-
+*/
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]){
     char line [MAX];
