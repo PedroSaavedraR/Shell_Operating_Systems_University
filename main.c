@@ -48,7 +48,7 @@ tItem commands[] =  {
         {"historic",historic,"Shows the historic of commands executed by this shell.\n– historic Prints all the commands that have been input with their order number\n– historic N Repeats command number N (from historic list)\n– historic -N Prints only the lastN comands"},
         {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode."},
         {"close",Close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
-        //{"dup",Dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
+        {"dup",Dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
         {"infosys",infosys,"Prints information on the machine running the shell (as obtained via the uname system call/library function)"},
         {"help",help," help displays a list of available commands. help cmd gives a brief help on the usage of command cmd"},
         {"quit",Quit,"Ends the shell"},
@@ -226,44 +226,41 @@ void Open (char * tr[]) {
 
 void Close (char *tr[]) {
     int df;
-
-
     if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro o el descriptor es menor que 0*/
         printf("Printing open files\n");
         printopenfiles(files);
         return;
     }
-
-    if (close(df)==-1)
+    if (close(df)==-1) {
         perror("Cannot close descriptor");
-    else{
-        tPos p = (findfile(df, files), files);
+    }else{
+        tPos p = findfile(df, files);
         if(p != NULL && df > 2) {
-            printf("hola %d %d",df, p->data.descriptor);
             closefile(p,&files);
         }
         else printf("Error, could not close file\n");
     }
 }
 
-*/
-void Dup (char ** tr[])
+
+void Dup (char * tr[])
 {
     int df, duplicado;
-    char aux[MAX],*p;
+    char aux[2*MAX],*p;
 
     if (tr[0]==NULL || (df=atoi(tr[0]))<0) { //no hay parametro el descriptor es menor que 0
-        printf("Printing open files");
+        printf("Printing open files\n");
         printopenfiles(files);
         return;
     }
-
     duplicado=dup(df);
-    p=.....NombreFicheroDescriptor(df).......;
-    sprintf (aux,"dup %d (%s)",df, p);
-    .......AnadirAFicherosAbiertos......duplicado......aux.....fcntl(duplicado,F_GETFL).....;
+    p = findfile(df,files)->data.filename;
+    sprintf(aux, "dup %d (%s)", df, p);
+    if(addfile(p,duplicado,fcntl(duplicado,F_GETFL),&files))
+        printf("Added file %s %d",aux,duplicado);
+    else printf("Error, could not add file");
 };
-*/
+
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]){
     char line [MAX];
@@ -285,5 +282,3 @@ int main(int argc, char *argv[]){
     }
     return 0;
 }
-
-

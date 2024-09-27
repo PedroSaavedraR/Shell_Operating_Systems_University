@@ -146,14 +146,20 @@ tPos next (tPos p, tfilelist L){
 • Outputs: the address of the element or NULL if the list is empty or if the file is not stored in the list
 • Preconditions: the list must be initialized
 • Postconditions:*/
-tPos findfile (int df, tfilelist L){ //fi
-    tPos p;
-    for(p=L; (p != NULL)&&(p->data.descriptor != df); p=p->next);
-    if(p!= NULL)
-        return p;
-    else
-        return NULL;
+tPos findfile(int df, tfilelist L) {
+    tPos p = L;
+    int i = 0;
+
+    while (p != NULL) {
+        if (p->data.descriptor == df) {
+            return p;
+        }
+        p = p->next;
+        i++;
+    }
+    return NULL;
 }
+
 
 /*
 • Goal: to delete the element at the given address from the list
@@ -183,7 +189,7 @@ void closefile (tPos p, tfilelist* L) {
 }
 
 bool initfilelist(tfilelist *L){
-    return (addfile("stdin", 0, fcntl(0,L), L)  &&  addfile("stdout", 1, fcntl(1,L), L) && addfile("stderr", 2, fcntl(2,L), L));
+    return (addfile("stdin", 0, fcntl(0,F_GETFL), L)  &&  addfile("stdout", 1, fcntl(1,F_GETFL), L) && addfile("stderr", 2, fcntl(2,F_GETFL), L));
 }
 
 /*
