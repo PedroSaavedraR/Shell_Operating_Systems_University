@@ -13,9 +13,8 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <sys/utsname.h>
 #include <string.h>
 #include <fcntl.h>
-
 HLIST L;
-tfilelist *files;
+tfilelist files;
 
 typedef struct Item{
     char *command;
@@ -48,7 +47,7 @@ tItem commands[] =  {
         {"date", date, "Prints the current date in the format DD/MM/YYYY and the current time in the format hh:mm:ss"},
         {"historic",historic,"Shows the historic of commands executed by this shell.\n– historic Prints all the commands that have been input with their order number\n– historic N Repeats command number N (from historic list)\n– historic -N Prints only the lastN comands"},
         {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode."},
-        //{"close",Close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
+        {"close",Close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
         //{"dup",Dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
         {"infosys",infosys,"Prints information on the machine running the shell (as obtained via the uname system call/library function)"},
         {"help",help," help displays a list of available commands. help cmd gives a brief help on the usage of command cmd"},
@@ -196,67 +195,85 @@ void cd (char *tr[]) {
 }
 
 void Open (char * tr[]) {
-    int i, df, mode = 0;
-
+    int i, mode = 0, df;
     if (tr[0] == NULL) { //no hay parametro
-        printopenfiles(*files);
+        printf("No file included, listing open files\n");
+        printopenfiles(files);
+        return;
+    } else {
+        for (i = 1; tr[i] != NULL; i++)
+            if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
+            else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
+            else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
+            else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
+            else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
+            else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
+            else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
+            else {
+                printf("error, opening descriptor not included");
+                break;
+            }
+        if ((df = open(tr[0], mode, 0777)) == -1)
+            perror("Cannot open file");
+        else {
+            bool d = addfile(tr[0],df,mode,&files);
+            if(d){
+                printf("Anadida entrada a la tabla ficheros abiertos %s %d %d ", tr[0],df,mode);
+            }else printf("Couldn't add file");
+        }
+    }
+}
+
+void Close (char *tr[]) {
+    int df;
+
+
+    if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro o el descriptor es menor que 0*/
+        printf("Printing open files\n");
+        printopenfiles(files);
         return;
     }
-    for (i = 1; tr[i] != NULL; i++)
-        if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
-        else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
-        else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
-        else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
-        else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
-        else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
-        else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
-        else break;
 
-    if ((df = open(tr[0], mode, 0777)) == -1)
-        perror("Cannot open file");
-    else {
-        if(addfile(tr[1],df,mode,files)){
-            printf("Anadida entrada a la tabla ficheros abiertos %s %d %d ", tr[i],df,mode);
-        }else printf("Couldn't add file");}
-}
-/*
-void Close (char **tr[]){
-        int df;
-
-        if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro o el descriptor es menor que 0*//*
-            printopenfiles(files);
-            return;
+    if (close(df)==-1)
+        perror("Cannot close descriptor");
+    else{
+        tPos p = (findfile(df, files), files);
+        if(p != NULL && df > 2) {
+            printf("hola %d %d",df, p->data.descriptor);
+            closefile(p,&files);
         }
-
-
-        if (close(df)==-1)
-            perror("Cannot close descriptor");
-        else
-        ........EliminarDeFicherosAbiertos......
+        else printf("Error, could not close file\n");
     }
+}
 
-
+*/
 void Dup (char ** tr[])
 {
-        int df, duplicado;
-        char aux[MAXNAME],*p;
+    int df, duplicado;
+    char aux[MAX],*p;
 
-        if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro
-            ListOpenFiles(-1);                 /*o el descriptor es menor que 0
-            return;
-        }
+    if (tr[0]==NULL || (df=atoi(tr[0]))<0) { //no hay parametro el descriptor es menor que 0
+        printf("Printing open files");
+        printopenfiles(files);
+        return;
+    }
 
-        duplicado=dup(df);
-        p=.....NombreFicheroDescriptor(df).......;
-        sprintf (aux,"dup %d (%s)",df, p);
-        .......AnadirAFicherosAbiertos......duplicado......aux.....fcntl(duplicado,F_GETFL).....;
-    }; */
+    duplicado=dup(df);
+    p=.....NombreFicheroDescriptor(df).......;
+    sprintf (aux,"dup %d (%s)",df, p);
+    .......AnadirAFicherosAbiertos......duplicado......aux.....fcntl(duplicado,F_GETFL).....;
+};
+
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]){
     char line [MAX];
     char *pcs[MAX/2];
-    tfilelist l;
-    createfilelist(&l);
+    createfilelist(&files);
+    if(!initfilelist(&files)) {
+        printf("error, could not initialize filelist");
+        return 1;
+    }
+
     InitHistoric(&L);
     while(1){
         printf("#) ");

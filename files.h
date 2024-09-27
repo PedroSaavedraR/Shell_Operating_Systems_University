@@ -22,12 +22,14 @@ struct tNode{
 
 typedef tPos tfilelist;
 
+bool initfilelist(tfilelist* list);
 bool isemptyfiles(tfilelist);
 void createfilelist(tfilelist*);
 void printopenfiles(tfilelist);
 bool addfile(char *filename,int df, int mode,tfilelist*);
-void closefile(tfilelist, tfilelist*);
+void closefile(tPos, tfilelist*);
 tfile getfile (tPos p, tfilelist);
+tPos findfile (int ,tfilelist);
 void cd();
 tPos first (tfilelist);
 tPos last (tfilelist);

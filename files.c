@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <fcntl.h>
 /*
 • Goal: to create a node by allocating memory
 • Inputs: the variable for which memory will be allocated
@@ -67,13 +68,12 @@ bool addfile(char *filename, int df, int mode, tfilelist *L) {
     if (*L == NULL) {
         *L = q;
     }
-        // If the new file should be inserted at the front (lexicographically smaller)
-    else if (strcmp(filename, (*L)->data.filename) < 0) {
-        q->next = *L;
-        *L = q;
-    }
-    else {
-        p = findPosition(q->data, *L); // Find the correct position
+
+    else{
+        p = *L;
+        while(p->next!=NULL){
+            p=p->next;
+        }
         q->next = p->next;
         p->next = q;
     }
@@ -146,10 +146,10 @@ tPos next (tPos p, tfilelist L){
 • Outputs: the address of the element or NULL if the list is empty or if the file is not stored in the list
 • Preconditions: the list must be initialized
 • Postconditions:*/
-tPos findfile (char *d, tfilelist L){
+tPos findfile (int df, tfilelist L){ //fi
     tPos p;
-    for(p=L; (p!= NULL)&&(strcmp(d, p->data.filename)>0); p=p->next); //the comparison depends on tItem
-    if(p!= NULL && strcmp(d,p->data.filename)==0)
+    for(p=L; (p != NULL)&&(p->data.descriptor != df); p=p->next);
+    if(p!= NULL)
         return p;
     else
         return NULL;
@@ -163,7 +163,7 @@ tPos findfile (char *d, tfilelist L){
 associated user is empty
 • Postconditions: The positions of the elements in the list following that of the
 deleted one may have changed */
-void deleteAtPosition (tPos p, tfilelist* L) {
+void closefile (tPos p, tfilelist* L) {
     tPos q;
 
     if(p==*L) //delete the first
@@ -178,7 +178,12 @@ void deleteAtPosition (tPos p, tfilelist* L) {
         p=q; //get rid of the duplicated node
 
     }
-    free(p); // p can now be used again
+    printf("Deleting %s\n", p->data.filename);
+    free(p);
+}
+
+bool initfilelist(tfilelist *L){
+    return (addfile("stdin", 0, fcntl(0,L), L)  &&  addfile("stdout", 1, fcntl(1,L), L) && addfile("stderr", 2, fcntl(2,L), L));
 }
 
 /*
@@ -194,7 +199,7 @@ void updatefile (tfile d, tPos p, tfilelist* L){
 void printopenfiles(tfilelist l) {
     tPos p;
     if (!isemptyfiles(l)) {
-        for (p = l; p->next != NULL; p = p->next) {
+        for (p = l; p != NULL; p = p->next) {
             printf("Name: %s\tDescriptor: %d\tMode: %d\n", p->data.filename, p->data.descriptor, p->data.mode);
         }
     } else printf("File list is empty");
