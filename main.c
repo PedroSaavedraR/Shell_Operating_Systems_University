@@ -38,15 +38,18 @@ void help (char *[]);
 void Quit(char *[]);
 void Exit(char *[]);
 void Bye(char *[]);
+void cwd (char *[]);
+void listdir (char *[]);
 
-tItem commands[] =  {
+
+tItem commands[20] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
         {"cd", cd, "Changes the current working directory of the shell to dir (using the chdir system call). When invoked without arguments it prints the current working directory (using the getcwd system call"},
         {"date", date, "Prints the current date in the format DD/MM/YYYY and the current time in the format hh:mm:ss"},
         {"historic",historic,"Shows the historic of commands executed by this shell.\n– historic Prints all the commands that have been input with their order number\n– historic N Repeats command number N (from historic list)\n– historic -N Prints only the lastN comands"},
-        {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode."},
+        {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode.\nopening modes:\n cr: O_CREAT \t	ap: O_APPEND\n	ex: O_EXCL \t	ro: O_RDONLY\n	rw: O_RDWR \t	wo: O_WRONLY\n	tr: O_TRUNC\n"},
         {"close",Close,"Closes the df file descriptor and eliminates the corresponding item from the list"},
         {"dup",Dup,"Duplicates the df file descriptor (using the dup system call, creating the corresponding new entry on the file list"},
         {"infosys",infosys,"Prints information on the machine running the shell (as obtained via the uname system call/library function)"},
@@ -54,6 +57,7 @@ tItem commands[] =  {
         {"quit",Quit,"Ends the shell"},
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
+        {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {"\0", NULL, "\0"},
 };
 
@@ -128,7 +132,7 @@ void historic(char **c) {
             PrintHistoricLast(&L,atoi(c[0]+1));
         else {
             n=atoi(c[0]);
-            if(n < GetLength(&L)){
+            if(n >0 && n < GetLength(&L)){
                 if ((strcpy(p,GetHistoricElement(&L,n))!=NULL)){
                     BreakLine(p, tr);
                     DoCommand(tr);
@@ -175,25 +179,73 @@ void infosys (char *c[]) {
     struct utsname info;
     uname(&info);
     printf("%s\n%s\n%s\n%s\n%s\n", info.sysname,info.machine,info.nodename,info.version,info.release);
+    }
+
+ int IsDirectory(char *name){
+   struct stat s;
+   if(lstat(name, s) == -1)
+     return 0;
+
+   return S_SIDIR(s.st_mode);
+   }
+
+
+
+ int ListDir(char *dirname, int hid, int longl, int link, int acc){
+   Dir *p;
+   struct dirent *d;
+
+   if((p=opendir(dir))==NULL)
+     return -1;
+
+  while((d=readdir(p))!=NULL){
+    if(!hid && d->>d_name[0]=='.')
+     continue;
+    if(PrintInfoFile (---long,link,acc)==-1)
+    print("Cannot list %s: %s\n",----, sterror(errno));
+
+    return closedir(p)
+    }
+
+
+void listdir(char *tr[]){
+  int i, ishid, islong, isacc, islink;
+  ishid=islong=isacc=islink=0;
+  for(i=0;tr[i]!=NULL;i++){
+    if(!strcmp(tr[0], "-hid"));
+    else if (!strcmp(tr[1], "-long"));
+    else if(!strcmp(tr[2], "-link"));
+    else if(!strcmp(tr[3], "-acc"));
+    else break;
+    }
+  if(tr[i]==NULL){
+    cwd(tr);
+    return;
+  }
+  for(;tr[i]!=NULL;i++){
+    if (ListDir(tr[i],ishid,islong,isacc,islink)==-1){
+      printf("Cannot list %s: %s\n",tr[i],strerror(errno));
 
 }
 
-
 void cd (char *tr[]) {
-    char actualdir[MAX];
     if (tr[0] == NULL) {
-        if (getcwd(actualdir, MAX) == NULL) //if the directory is not found
-            printf("ERROR");
-        else
-            printf("%s", actualdir);
+        printf("Not executed: No such file or directory");
     } else {
         if (chdir(tr[0]) == 0) //chdir returns 0 if the directory change was successful and -1 if not
             printf("%s", tr[0]); //tr[0] is the new actual directory
         else
-            printf("ERROR");
+            printf("Not executed: No such file or directory");
     }
 }
 
+void cwd (char *tr[]) {
+    char actualdir[MAX];
+    if (tr[0] == NULL && (getcwd(actualdir, MAX) != NULL))
+        printf("%s", actualdir);
+}
+
+            
 void Open (char * tr[]) {
     int i, mode = 0, df;
     if (tr[0] == NULL) { //no hay parametro
@@ -211,14 +263,13 @@ void Open (char * tr[]) {
             else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
             else {
                 printf("error, opening descriptor not included");
-                break;
+                return;
             }
         if ((df = open(tr[0], mode, 0777)) == -1)
             perror("Cannot open file");
         else {
-            bool d = addfile(tr[0],df,mode,&files);
-            if(d){
-                printf("Anadida entrada a la tabla ficheros abiertos %s %d %d ", tr[0],df,mode);
+            if(addfile(tr[0],df,mode,&files)){            
+              printf("Anadida entrada a la tabla ficheros abiertos %s %d %d(%s) ", tr[0],df,mode,strmode(mode));
             }else printf("Couldn't add file");
         }
     }
@@ -231,12 +282,13 @@ void Close (char *tr[]) {
         printopenfiles(files);
         return;
     }
+    if(atoi(tr[0]) == 0 || atoi(tr[0]) == 1 || atoi(tr[0]) == 2){printf("error, cant delete");return;}
     if (close(df)==-1) {
         perror("Cannot close descriptor");
     }else{
         tPos p = findfile(df, files);
-        if(p != NULL && df > 2) {
-            closefile(p,&files);
+        if(p != NULL) {
+        closefile(p,&files);
         }
         else printf("Error, could not close file\n");
     }
@@ -249,17 +301,18 @@ void Dup (char * tr[])
     char aux[2*MAX],*p;
 
     if (tr[0]==NULL || (df=atoi(tr[0]))<0) { //no hay parametro el descriptor es menor que 0
-        printf("Printing open files\n");
-        printopenfiles(files);
-        return;
-    }
-    duplicado=dup(df);
-    p = findfile(df,files)->data.filename;
-    sprintf(aux, "dup %d (%s)", df, p);
-    if(addfile(p,duplicado,fcntl(duplicado,F_GETFL),&files))
-        printf("Added file %s %d",aux,duplicado);
+            printf("Printing open files\n");
+            printopenfiles(files);
+            return;
+        }
+        duplicado=dup(df);
+        p = findfile(df,files)->data.filename;
+        sprintf(aux, "dup %d (%s)", df, p);
+        if(addfile(p,duplicado,fcntl(duplicado,F_GETFL),&files))
+            printf("Added file %s %d",aux,duplicado);
     else printf("Error, could not add file");
-};
+    };
+
 
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]){
