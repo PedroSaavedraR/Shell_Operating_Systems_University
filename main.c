@@ -42,6 +42,7 @@ void Quit(char *[]);
 void Exit(char *[]);
 void Bye(char *[]);
 void cwd (char *[]);
+void makefile (char *[]);
 void listdir (char *[]);
 
 
@@ -61,6 +62,7 @@ tItem commands[20] =  {
         {"quit",Quit,"Ends the shell"},
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
+        {"makefile", makefile,  "creates a file"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
 };
@@ -271,6 +273,8 @@ void listdir(char *tr[]){
 
 }
 */
+
+
     void cd(char *tr[]) {
          if (tr[0] == NULL) {
              printf("Not executed: No such file or directory");
@@ -312,14 +316,27 @@ void listdir(char *tr[]){
                  perror("Cannot open file");
              else {
                  if (addfile(tr[0], df, mode, &files)) {
-                     printf("Anadida entrada a la tabla ficheros abiertos %s %d %d(%s) ", tr[0], df, mode,
+                     printf("Opened an entry to the list of opened files %s %d %d(%s) ", tr[0], df, mode,
                             strmode(mode));
                  } else printf("Couldn't add file");
              }
          }
      }
 
-     void Close(char *tr[]) {
+void makefile (char *tr[]) {
+    char actualdir[MAX];
+    if (tr[0] == NULL && (getcwd(actualdir, MAX) != NULL))
+        printf("%s", actualdir);
+    else {
+        char* name = tr[0];
+        int fd = open(name, O_CREAT | O_RDWR, "0666");
+        if (fd == -1)
+            perror("Error creating file");
+    }
+}
+
+
+void Close(char *tr[]) {
          int df;
          if (tr[0] == NULL || (df = atoi(tr[0])) < 0) { /*no hay parametro o el descriptor es menor que 0*/
              printf("Printing open files\n");
