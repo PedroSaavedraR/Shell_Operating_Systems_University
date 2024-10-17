@@ -44,6 +44,7 @@ void Bye(char *[]);
 void cwd (char *[]);
 void makefile (char *[]);
 void listdir (char *[]);
+void erase (char *[]);
 
 
 tItem commands[20] =  {
@@ -63,6 +64,7 @@ tItem commands[20] =  {
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
+        {"erase", erase, "deletes files and/or empty directories"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
 };
@@ -334,6 +336,10 @@ void makefile (char *tr[]) {
             perror("Error creating file");
     }
 }
+
+void erase (char *tr[]){ //unfinished
+        remove(*tr);
+    }
 
 
 void Close(char *tr[]) {
