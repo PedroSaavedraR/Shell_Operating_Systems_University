@@ -33,13 +33,13 @@ void ClearHistoric (HLIST *l){
 void PrintHistoric (HLIST *l){
     int i;
     for(i=0; i<l->counter;i++)
-        printf("%d->%s\n", i , l->command[i]);
+        printf("%d->%s", i , l->command[i]);
 }
 
 void PrintHistoricLast(HLIST *l,int n){
     int i;
     for(i=l->counter -1;i>l->counter -n -1;i--){
-        printf("%d->%s\n",i, l->command[i]);
+        printf("%d->%s",i, l->command[i]);
 }}
 
 char* GetHistoricElement(HLIST *l,int n){

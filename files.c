@@ -184,7 +184,6 @@ void closefile (tPos p, tfilelist* L) {
         p=q; //get rid of the duplicated node
 
     }
-    printf("Deleting %s\n", p->data.filename);
     free(p);
 }
 

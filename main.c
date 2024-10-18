@@ -16,6 +16,9 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <sys/stat.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+
 HLIST L;
 tfilelist files;
 
@@ -65,6 +68,7 @@ tItem commands[20] =  {
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
         {"erase", erase, "deletes files and/or empty directories"},
+        //{"listdir", listdir, "lists the contents of the directories"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
 };
@@ -131,7 +135,7 @@ void historic(char **c) {
     char *tr[MAX/2];
     int n;
     char p[MAX];
-    if (c[0]==NULL){//if there are no arguments
+    if (c[0]==NULL){
         PrintHistoric(&L);
         return;
     }
@@ -140,7 +144,7 @@ void historic(char **c) {
             PrintHistoricLast(&L,atoi(c[0]+1));
         else {
             n=atoi(c[0]);
-            if(n >0 && n < GetLength(&L)){
+            if(n >= 0 && n < GetLength(&L)){
                 if ((strcpy(p,GetHistoricElement(&L,n))!=NULL)){
                     BreakLine(p, tr);
                     DoCommand(tr);
@@ -238,44 +242,54 @@ char * strmode (mode_t m)
     return permisos;
 }
 /*
- int ListDir(char *dirname, int hid, int longl, int link, int acc) {
-     Dir *p;
-     struct dirent *d;
+int ListDir(char *dirname, int hid, int longl, int link, int acc) {
+    DIR *p;
+    struct dirent *d;
 
-     if ((p = opendir(dir)) == NULL)
-         return -1;
+    if ((p = opendir(dirname)) == NULL)
+        return -1;
 
-     while ((d = readdir(p)) != NULL) {
-         if (!hid && d->> d_name[0] == '.')
-             continue;
-         if (PrintInfoFile(-- -long,link, acc)==-1)
-         print("Cannot list %s: %s\n", -- --, sterror(errno));
+    while ((d = readdir(p)) != NULL) {
+        if (!hid && d->d_name[0] == '.') //to skip hidden files
+            continue;
 
-         return closedir(p)
-     }
-
-
-void listdir(char *tr[]){
-  int i, ishid, islong, isacc, islink;
-  ishid=islong=isacc=islink=0;
-  for(i=0;tr[i]!=NULL;i++){
-    if(!strcmp(tr[0], "-hid"));
-    else if (!strcmp(tr[1], "-long"));
-    else if(!strcmp(tr[2], "-link"));
-    else if(!strcmp(tr[3], "-acc"));
-    else break;
+        if (PrintInfoFile(d->d_name, dirname, longl, link, acc) == -1)
+            printf("Cannot list %s: %s\n", d->d_name, strerror(errno));
     }
-  if(tr[i]==NULL){
-    cwd(tr);
-    return;
-  }
-  for(;tr[i]!=NULL;i++){
-    if (ListDir(tr[i],ishid,islong,isacc,islink)==-1){
-      printf("Cannot list %s: %s\n",tr[i],strerror(errno));
+    if (closedir(p) == -1) { //after finishing, the directory should be closed
+        printf("Error closing directory %s: %s\n", dirname, strerror(errno));
+        return -1;
+    }
 
+    return 0;  // Success
 }
-*/
 
+void listdir(char *tr[]) {
+    int i, ishid, islong, isacc, islink;
+    ishid = islong = isacc = islink = 0;
+    for (i = 0; tr[i] != NULL; i++) {
+        if (strcmp(tr[i], "-hid") == 0) {
+            ishid = 1; //hidden files
+        } else if (strcmp(tr[i], "-long") == 0) {
+            islong = 1; //long format
+        } else if (strcmp(tr[i], "-link") == 0) {
+            islink = 1; //Symbolic Links
+        } else if (strcmp(tr[i], "-acc") == 0) {
+            isacc = 1; //Access times
+        } else {
+            break;
+        }
+    }
+    if (tr[i] == NULL) {
+        cwd(tr);
+        return;
+    }
+    for (;tr[i]!=NULL;i++) {
+        if (ListDir(tr[i], ishid, islong, isacc, islink) == -1) {
+            printf("Cannot list %s: %s\n", tr[i], strerror(errno));
+        }
+    }
+}*/
 
     void cd(char *tr[]) {
          if (tr[0] == NULL) {
@@ -294,36 +308,36 @@ void listdir(char *tr[]){
              printf("%s", actualdir);
      }
 
+void Open(char *tr[]) {
+    int i, mode = 0, df;
+    if (tr[0] == NULL) { //no parameter
+        printf("No file included, listing open files\n");
+        printopenfiles(files);
+        return;
+    } else {
+        for (i = 1; tr[i] != NULL; i++)
+            if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
+            else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
+            else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
+            else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
+            else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
+            else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
+            else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
+            else {
+                printf("error, opening descriptor not included");
+                return;
+            }
+        if ((df = open(tr[0], mode, 0777)) == -1)
+            perror("Cannot open file");
+        else {
+            if (addfile(tr[0], df, mode, &files)) {
+                printf("Opened an entry to the list of opened files %s %d %d(%s) ", tr[0], df, mode,
+                       strmode(mode));
+            } else printf("Couldn't add file");
+        }
+    }
+}
 
-     void Open(char *tr[]) {
-         int i, mode = 0, df;
-         if (tr[0] == NULL) { //no parameter
-             printf("No file included, listing open files\n");
-             printopenfiles(files);
-             return;
-         } else {
-             for (i = 1; tr[i] != NULL; i++)
-                 if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
-                 else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
-                 else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
-                 else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
-                 else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
-                 else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
-                 else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
-                 else {
-                     printf("error, opening descriptor not included");
-                     return;
-                 }
-             if ((df = open(tr[0], mode, 0777)) == -1)
-                 perror("Cannot open file");
-             else {
-                 if (addfile(tr[0], df, mode, &files)) {
-                     printf("Opened an entry to the list of opened files %s %d %d(%s) ", tr[0], df, mode,
-                            strmode(mode));
-                 } else printf("Couldn't add file");
-             }
-         }
-     }
 
 void makefile (char *tr[]) {
     char actualdir[MAX];
