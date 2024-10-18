@@ -17,6 +17,7 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 HLIST L;
 tfilelist files;
@@ -67,7 +68,7 @@ tItem commands[20] =  {
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
         {"erase", erase, "deletes files and/or empty directories"},
-        {"listdir", listdir, "lists the contents of the directories"},
+        //{"listdir", listdir, "lists the contents of the directories"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
 };
@@ -134,7 +135,7 @@ void historic(char **c) {
     char *tr[MAX/2];
     int n;
     char p[MAX];
-    if (c[0]==NULL){//if there are no arguments
+    if (c[0]==NULL){
         PrintHistoric(&L);
         return;
     }
@@ -143,7 +144,7 @@ void historic(char **c) {
             PrintHistoricLast(&L,atoi(c[0]+1));
         else {
             n=atoi(c[0]);
-            if(n >0 && n < GetLength(&L)){
+            if(n >= 0 && n < GetLength(&L)){
                 if ((strcpy(p,GetHistoricElement(&L,n))!=NULL)){
                     BreakLine(p, tr);
                     DoCommand(tr);
@@ -240,7 +241,7 @@ char * strmode (mode_t m)
 
     return permisos;
 }
-
+/*
 int ListDir(char *dirname, int hid, int longl, int link, int acc) {
     DIR *p;
     struct dirent *d;
@@ -288,7 +289,7 @@ void listdir(char *tr[]) {
             printf("Cannot list %s: %s\n", tr[i], strerror(errno));
         }
     }
-}
+}*/
 
     void cd(char *tr[]) {
          if (tr[0] == NULL) {
