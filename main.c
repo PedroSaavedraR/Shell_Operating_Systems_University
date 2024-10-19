@@ -55,7 +55,7 @@ tItem commands[20] =  {
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
         {"cd", cd, "Changes the current working directory of the shell to dir (using the chdir system call). When invoked without arguments it prints the current working directory (using the getcwd system call"},
-        {"cwd", cwd, ""},
+        {"cwd", cwd, "Prints current directory"},
         {"date", date, "Prints the current date in the format DD/MM/YYYY and the current time in the format hh:mm:ss"},
         {"historic",historic,"Shows the historic of commands executed by this shell.\n– historic Prints all the commands that have been input with their order number\n– historic N Repeats command number N (from historic list)\n– historic -N Prints only the lastN comands"},
         {"open",Open,"Opens a file and adds it (together with the file descriptor and the opening mode to the list of shell open files. Open without arguments lists the shell open files. For each file it lists its descriptor, the file name and the opening mode.\nopening modes:\n cr: O_CREAT \t	ap: O_APPEND\n	ex: O_EXCL \t	ro: O_RDONLY\n	rw: O_RDWR \t	wo: O_WRONLY\n	tr: O_TRUNC\n"},
@@ -291,6 +291,17 @@ void listdir(char *tr[]) {
     }
 }*/
 
+void erase(char *tr[]){
+	if(tr[0]==NULL) cwd(tr);
+	else{
+	for(int i=0;tr[i] != NULL;i++){
+	if(remove(tr[i]) != 0)
+		printf("Could not remove %s",tr[i]);
+	else    printf("Removed %s",tr[i]);
+	}
+	}}
+
+
     void cd(char *tr[]) {
          if (tr[0] == NULL) {
              printf("Not executed: No such file or directory");
@@ -350,10 +361,6 @@ void makefile (char *tr[]) {
             perror("Error creating file");
     }
 }
-
-void erase (char *tr[]){ //unfinished
-        remove(*tr);
-    }
 
 
 void Close(char *tr[]) {
