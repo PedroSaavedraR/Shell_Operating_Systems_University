@@ -7,7 +7,7 @@
 
 int IsHistoricEmpty(HLIST *l){
     return l->counter==0;
-    }
+}
 
 void InitHistoric (HLIST *l){
     l->counter=0;
@@ -36,11 +36,12 @@ void PrintHistoric (HLIST *l){
         printf("%d->%s", i , l->command[i]);
 }
 
-void PrintHistoricLast(HLIST *l,int n){
-    int i;
-    for(i=l->counter -1;i>l->counter -n -1;i--){
-        printf("%d->%s",i, l->command[i]);
-}}
+void PrintHistoricLast(HLIST *l, int n) {
+    for (int i=l->counter-n; i<l->counter;i++) {
+        printf("%d->%s", i, l->command[i]);
+    }
+}
+
 
 char* GetHistoricElement(HLIST *l,int n){
     return l->command[n];
