@@ -46,6 +46,7 @@ void Exit(char *[]);
 void Bye(char *[]);
 void cwd (char *[]);
 void makefile (char *[]);
+void makedir (char *[]);
 void listdir (char *[]);
 void erase (char *[]);
 
@@ -67,7 +68,10 @@ tItem commands[20] =  {
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
+	{"makedir",makedir,"creates a directory"},
         {"erase", erase, "deletes files and/or empty directories"},
+	//{"reclist",reclist,"lists directories recursively(subdirectories after)"},
+	//{"revlist",revlist,"lists directories recursively(subdirectories before)"},
         //{"listdir", listdir, "lists the contents of the directories"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
@@ -362,6 +366,12 @@ void makefile (char *tr[]) {
     }
 }
 
+void makedir (char *tr[]){
+	if(tr[0] == NULL) cwd(tr);
+	if(mkdir(tr[0],0755) != 0)
+		printf("error creating directory");
+	else    printf("Directory %s created",tr[0]);
+}
 
 void Close(char *tr[]) {
          int df;
