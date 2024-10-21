@@ -52,9 +52,10 @@ void makedir (char *[]);
 void listdir (char *[]);
 void listfile (char*[]);
 void erase (char *[]);
+void listfile (char *[]);
 char * strmode(mode_t m);
 
-tItem commands[20] =  {
+tItem commands[21] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
@@ -71,7 +72,7 @@ tItem commands[20] =  {
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
-	{"makedir",makedir,"creates a directory"},
+	    {"makedir",makedir,"creates a directory"},
         {"erase", erase, "deletes files and/or empty directories"},
 	//{"reclist",reclist,"lists directories recursively(subdirectories after)"},
 	//{"revlist",revlist,"lists directories recursively(subdirectories before)"},
@@ -221,9 +222,9 @@ char LetraTF (mode_t m)
         default: return '?'; /*desconocido, no deberia aparecer*/
     }
 }
-/*las siguientes funciones devuelven los permisos de un fichero en formato rwx----*/
-/*a partir del campo st_mode de la estructura stat */
-/*las tres son correctas pero usan distintas estrategias de asignaciÃ³n de memoria*/
+/*las siguientes funciones devuelven los permisos de un fichero en formato rwx----
+a partir del campo st_mode de la estructura stat
+las tres son correctas pero usan distintas estrategias de asignaciÃ³n de memoria*/
 
 
 int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
@@ -272,8 +273,7 @@ void listfile(char *tr[]){
 	}
 }
 
-char * strmode (mode_t m)
-{
+char * strmode (mode_t m){
     static char permisos[12];
     strcpy (permisos,"---------- ");
 
@@ -293,6 +293,55 @@ char * strmode (mode_t m)
 
     return permisos;
 }
+
+int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
+    struct stat fileStat;
+    char path[1024] ,linkTarget[1024];
+    snprintf(path, sizeof(path), "%s/%s", dirname, filename);
+
+    if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+        return -1;
+    }
+    if(acc) {
+        char time[64];
+        strftime(time,sizeof(time),"%Y-%m-%d %H:%M:%S  ", localtime(&fileStat.st_atime));
+        printf("%s",time);
+    }
+
+    if(longl){
+        struct passwd *pws = getpwuid(fileStat.st_uid);
+        struct group *grp = getgrgid(fileStat.st_gid);
+        printf("%ld(%ld) %s %s %s",fileStat.st_nlink,fileStat.st_ino,pws->pw_name,grp->gr_name,strmode(fileStat.st_mode));
+    }
+    if(link && S_ISLNK(fileStat.st_mode)){
+        int length = readlink(path,linkTarget,sizeof(linkTarget) -1);
+        if(length!=-1){
+            linkTarget[length] = '\0';
+            printf("link: %s \n",linkTarget);}
+    }else printf(" ");
+    printf("%ld  %s\n", (long)fileStat.st_size, filename);
+    return 0;
+}
+
+void listfile(char *tr[]){
+    if(tr[0] == NULL) cwd(tr);
+    else{
+        int longl,link,acc,i;
+        char actualdir[MAX];
+        longl = link = acc = 0;
+        for(i=0;tr[i][0] == '-';i++){
+            if(!strcmp(tr[i],"-long")) longl = 1;
+            else if(!strcmp(tr[i],"-acc")) acc = 1;
+            else if(!strcmp(tr[i], "-link")) link = 1;
+        }
+        for(;tr[i] != NULL;i++){
+            if(PrintInfoFile(tr[i],getcwd(actualdir,MAX),longl,link,acc) == -1) printf("error");
+        }
+    }
+}
+
+
+
 int ListDir(char *dirname, int hid, int longl, int link, int acc) {
     DIR *p;
     struct dirent *d;
@@ -353,6 +402,18 @@ void erase(char *tr[]){
 	else    printf("Removed %s",tr[i]);
 	}
 	}}
+/*
+void reclist (char *tr[]){
+    if(tr[0]==NULL)
+        printf("Not executed: no such file or directory");
+    else if ( !IsDirectory(*tr)){
+        printf("Error accessing %s: No such file or directory", *tr);
+    }
+    else listdir(re)
+
+    }*/
+
+
 
 
     void cd(char *tr[]) {
