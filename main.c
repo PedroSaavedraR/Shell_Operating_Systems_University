@@ -50,7 +50,6 @@ void cwd (char *[]);
 void makefile (char *[]);
 void makedir (char *[]);
 void listdir (char *[]);
-void listfile (char*[]);
 void erase (char *[]);
 char * strmode(mode_t m);
 
@@ -71,12 +70,11 @@ tItem commands[20] =  {
         {"bye",Bye,"Ends the shell"},
         {"exit",Exit,"Ends the shell"},
         {"makefile", makefile,  "creates a file"},
-	{"makedir",makedir,"creates a directory"},
+	    {"makedir",makedir,"creates a directory"},
         {"erase", erase, "deletes files and/or empty directories"},
 	//{"reclist",reclist,"lists directories recursively(subdirectories after)"},
 	//{"revlist",revlist,"lists directories recursively(subdirectories before)"},
-        {"listfile", listfile, "gives information about a given file \n listflie [-long][-acc][-link} name1 name2 .. \n -long: gives the long listing of the file\n -acc: accesstime \nlink: if the link is symbolic, the path given"},
- //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
+        {"listdir", listdir, "lists the contents of the directories"},
         {NULL, NULL, "\0"},
 };
 
@@ -226,11 +224,8 @@ char LetraTF (mode_t m)
 /*las tres son correctas pero usan distintas estrategias de asignaciÃ³n de memoria*/
 
 
-int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
-	    struct stat fileStat;
-	        char path[1024] ,linkTarget[1024];
-		    snprintf(path, sizeof(path), "%s/%s", dirname, filename);
 
+<<<<<<< HEAD
 		        if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
 							 return -1;
 							 }
@@ -274,6 +269,9 @@ void listfile(char *tr[]){
 
 char * strmode (mode_t m)
 {
+=======
+char * strmode (mode_t m){
+>>>>>>> refs/remotes/origin/master
     static char permisos[12];
     strcpy (permisos,"---------- ");
 
@@ -293,14 +291,25 @@ char * strmode (mode_t m)
 
     return permisos;
 }
-/*
+
+int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
+    struct stat fileStat;
+    char path[1024];
+    snprintf(path, sizeof(path), "%s/%s", dirname, filename);
+
+    if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+        return -1;
+    }
+    printf("%10ld  %s\n", (long)fileStat.st_size, filename);
+    return 0;
+}
+
 int ListDir(char *dirname, int hid, int longl, int link, int acc) {
     DIR *p;
     struct dirent *d;
 
     if ((p = opendir(dirname)) == NULL)
         return -1;
-
     while ((d = readdir(p)) != NULL) {
         if (!hid && d->d_name[0] == '.') //to skip hidden files
             continue;
@@ -312,8 +321,7 @@ int ListDir(char *dirname, int hid, int longl, int link, int acc) {
         printf("Error closing directory %s: %s\n", dirname, strerror(errno));
         return -1;
     }
-
-    return 0;  // Success
+    return 0;
 }
 
 void listdir(char *tr[]) {
@@ -341,10 +349,11 @@ void listdir(char *tr[]) {
             printf("Cannot list %s: %s\n", tr[i], strerror(errno));
         }
     }
-}*/
+}
 
 void erase(char *tr[]){
-	if(tr[0]==NULL) cwd(tr);
+	if(tr[0]==NULL)
+        cwd(tr);
 	else{
 	for(int i=0;tr[i] != NULL;i++){
 	if(remove(tr[i]) != 0)
