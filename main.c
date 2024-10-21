@@ -48,6 +48,7 @@ void cwd (char *[]);
 void makefile (char *[]);
 void makedir (char *[]);
 void listdir (char *[]);
+void listfile (char*[]);
 void erase (char *[]);
 
 
@@ -72,7 +73,7 @@ tItem commands[20] =  {
         {"erase", erase, "deletes files and/or empty directories"},
 	//{"reclist",reclist,"lists directories recursively(subdirectories after)"},
 	//{"revlist",revlist,"lists directories recursively(subdirectories before)"},
-        //{"listdir", listdir, "lists the contents of the directories"},
+        {"listfile", listfile, "gives information about a given file \n listflie [-long][-acc][-link} name1 name2 .. \n -long: gives the long listing of the file\n -acc: accesstime \nlink: if the link is symbolic, the path given"},
  //       {"listdir", listdir, "listdir [-reca] [-recb] [-hid][-long][-link][-acc] n1 n2 ..	lists the contents in the directories \n-hid: includes hidden files\n-recb: recursive (before)\n-reca: recursive (after)\nrest of the parameters as stat"},
         {NULL, NULL, "\0"},
 };
@@ -223,6 +224,47 @@ char LetraTF (mode_t m)
 /*las tres son correctas pero usan distintas estrategias de asignaciÃ³n de memoria*/
 
 
+int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
+	    struct stat fileStat;
+	        char path[1024] ,linkTarget[1024];
+		    snprintf(path, sizeof(path), "%s/%s", dirname, filename);
+
+		        if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+							 return -1;
+							 }
+			if(acc) {
+				char time[64];
+				strftime(time,sizeof(time),"%Y-%m-%d %H:%M:%S  ", localtime(&fileStat.st_atime));
+				printf("%s",time);
+				}
+				
+			if(longl)printf("long");
+			if(link && S_ISLNK(fileStat.st_mode)){
+					int length = readlink(path,linkTarget,sizeof(linkTarget) -1);
+					if(length!=-1){
+					linkTarget[length] = '\0';
+					printf("Symbolic link taraget: %s \n",linkTarget);}
+					}else printf(" ");
+	                printf("%10ld  %s\n", (long)fileStat.st_size, filename);
+	                return 0;
+}
+
+void listfile(char *tr[]){
+	if(tr[0] == NULL) cwd(tr);
+	else{
+		int longl,link,acc,i;
+		char actualdir[MAX];
+		longl = link = acc = 0;
+		for(i=0;tr[i][0] == '-';i++){
+		if(!strcmp(tr[i],"-long")) longl = 1;
+		else if(!strcmp(tr[i],"-acc")) acc = 1;
+		else if(!strcmp(tr[i], "-link")) link = 1;
+		}
+		for(;tr[i] != NULL;i++){
+		    if(PrintInfoFile(tr[i],getcwd(actualdir,MAX),longl,link,acc) == -1) printf("error");	
+		}
+	}
+}
 
 char * strmode (mode_t m)
 {
