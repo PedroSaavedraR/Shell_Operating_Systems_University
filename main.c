@@ -18,6 +18,8 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <pwd.h>
+#include <grp.h>
 
 HLIST L;
 tfilelist files;
@@ -50,7 +52,7 @@ void makedir (char *[]);
 void listdir (char *[]);
 void listfile (char*[]);
 void erase (char *[]);
-
+char * strmode(mode_t m);
 
 tItem commands[20] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
@@ -238,14 +240,18 @@ int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
 				printf("%s",time);
 				}
 				
-			if(longl)printf("long");
+			if(longl){
+			struct passwd *pws = getpwuid(fileStat.st_uid);
+				struct group *grp = getgrgid(fileStat.st_gid);	
+				printf("%ld(%ld) %s %s %s",fileStat.st_nlink,fileStat.st_ino,pws->pw_name,grp->gr_name,strmode(fileStat.st_mode));
+			}
 			if(link && S_ISLNK(fileStat.st_mode)){
 					int length = readlink(path,linkTarget,sizeof(linkTarget) -1);
 					if(length!=-1){
 					linkTarget[length] = '\0';
-					printf("Symbolic link taraget: %s \n",linkTarget);}
+					printf("link: %s \n",linkTarget);}
 					}else printf(" ");
-	                printf("%10ld  %s\n", (long)fileStat.st_size, filename);
+	                printf("%ld  %s\n", (long)fileStat.st_size, filename);
 	                return 0;
 }
 
