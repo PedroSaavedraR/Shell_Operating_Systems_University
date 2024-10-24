@@ -35,5 +35,6 @@ tPos first (tfilelist);
 tPos last (tfilelist);
 tPos previous (tPos, tfilelist);
 void updatefile (tfile, tPos, tfilelist*);
+void FreeFileList(tfilelist);
 
 #endif //S0_P0_FILES_H
