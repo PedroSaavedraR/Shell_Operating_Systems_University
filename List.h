@@ -17,6 +17,7 @@ void ClearHistoric (HLIST*);
 void PrintHistoric (HLIST*);
 void PrintHistoricLast(HLIST *,int);
 char* GetHistoricElement(HLIST *l,int n);
-int GetLength(HLIST *L);
+int GetLength(HLIST *);
+void FreeHistoricList (HLIST*);
 
 #endif //S0_P0_LIST_H
