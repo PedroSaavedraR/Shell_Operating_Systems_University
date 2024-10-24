@@ -7,7 +7,7 @@
 
 int IsHistoricEmpty(HLIST *l){
     return l->counter==0;
-}
+    }
 
 void InitHistoric (HLIST *l){
     l->counter=0;
@@ -18,7 +18,11 @@ int AddHistoricElement(HLIST *l, char * cmd){
         errno=ENOSPC; //error number for not enough space
         return -1;
     }
-    if((l->command[l->counter]=strdup (cmd))==NULL)
+    // Free previously allocated memory if it exists
+    if (l->command[l->counter] != NULL) {
+        free(l->command[l->counter]);
+    }
+    if((l->command[l->counter]=strdup(cmd))==NULL)
         return -1;
     l->counter++;
     return l->counter;
@@ -50,4 +54,13 @@ char* GetHistoricElement(HLIST *l,int n){
 
 int GetLength(HLIST *l){
     return l->counter;
+}
+
+void FreeHistoricList(HLIST *l) { //to free all the allocated nodes
+    for (int i = 0; i < l->counter; i++) {
+        if (l->command[i] != NULL) {
+            free(l->command[i]);
+            l->command[i] = NULL;
+        }
+    }
 }
