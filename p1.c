@@ -23,6 +23,7 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 
 HLIST L;
 tfilelist files;
+tmemlist memlist;
 
 typedef struct Item{
     char *command;
@@ -176,17 +177,20 @@ void ppid(char *tr[]){
 void Quit(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
+    FreeMemList(memlist);
     exit(0);
 }
 
 void Exit(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
+    FreeMemList(memlist);
     exit(0);
 }
 void Bye(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
+    FreeMemList(memlist);
     exit(0);
 }
 
@@ -616,14 +620,60 @@ void makedir (char *tr[]){
 }
 
 void allocate(char *tr[]){
+if(tr[0] == NULL)
+    printmemory(memlist);
+else{
+    if (strcmp(tr[1], "-malloc")==0) {
+        time_t now = time(NULL);
+        struct tm *local = localtime(&now);
+        char date[20];
+        strftime(date,sizeof(date),"%b %d %H",local);
+        int size = atoi(tr[2]);
+        if (size <= 0) {
+            printf("Invalid size\n");
+            return;
+        }
+        char *address =  malloc(sizeof(size));
+        if (address == NULL) {
+            printf("Memory allocation failed.\n");
+            return;
+        }
+        addmem(*address,size,date,"malloc",&memlist);
+    }
+    else if (strcmp(tr[1], "-createshared")==0){}
+    else if (strcmp(tr[1], "-mmap")==0){}
+    else if (strcmp(tr[1], "-shared")==0){}
+}}
 
-}
+void deallocate(char *tr[]){
+    if(tr[0] == NULL)
+        printmemory(memlist);
+    else{
+        if (strcmp(tr[1], "-malloc")==0) {
+
+            int size = atoi(tr[2]);
+            if (size <= 0) {
+                printf("Invalid size\n");
+                return;
+            }
+            char *address =  malloc(sizeof(size));
+            if (address == NULL) {
+                printf("Memory allocation failed.\n");
+                return;
+            }
+            addmem(*address,size,date,"malloc",&memlist);
+        }
+        else if (strcmp(tr[1], "-createshared")==0){}
+        else if (strcmp(tr[1], "-mmap")==0){}
+        else if (strcmp(tr[1], "-shared")==0){}
+    }}
 
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
     char line[MAX];
     char *pcs[MAX / 2];
     createfilelist(&files);
+    creatememlist(&memlist);
     if (!initfilelist(&files)) {
         printf("Error, could not initialize filelist");
         return 1;
