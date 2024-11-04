@@ -13,14 +13,28 @@ typedef struct file{
     int descriptor;
 }tfile;
 
+typedef struct memory{
+    char *adress;
+    int size;
+    char *date;
+    char *method;
+}tmemory;
+
 typedef struct tNode* tPos;
+typedef struct mNode* mPos;
 
 struct tNode{
     tfile data;
     tPos next;
 };
 
+struct mNode{
+    tmemory data;
+    mPos next;
+};
+
 typedef tPos tfilelist;
+typedef mPos tmemlist;
 
 bool initfilelist(tfilelist* list);
 bool isemptyfiles(tfilelist);
@@ -36,5 +50,13 @@ tPos last (tfilelist);
 tPos previous (tPos, tfilelist);
 void updatefile (tfile, tPos, tfilelist*);
 void FreeFileList(tfilelist);
+
+bool isemptymem(tmemlist);
+void creatememlist(tmemlist*);
+void printmemory(tmemlist);
+bool addmem(char address,int size,char *date,char *method, tmemlist*);
+mPos findmem(char* adress,tmemlist*);
+void closemem(mPos,tmemlist*);
+void FreeMemList(tmemlist);
 
 #endif //S0_P0_FILES_H
