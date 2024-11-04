@@ -13,9 +13,8 @@ bool createNode(tPos *p){
 
 
 void createfilelist (tfilelist *l){
-    *l = NULL; // sets the address pointed to by L to NULL
+    *l = NULL;
 }
-
 
 bool isemptyfiles (tfilelist L){
     return (L==NULL); // if the first element is null, it is empty
@@ -41,7 +40,7 @@ bool addfile(char *filename, int df, int mode, tfilelist *L) {
     //Inserting at the end
     else{
         p = *L;
-        while(p->next!=NULL){
+        while(p->next != NULL && p->next->data.descriptor < df){
             p=p->next;
         }
         q->next = p->next;
@@ -103,5 +102,79 @@ void FreeFileList(tfilelist l) {
         p = l;
         l = l->next;
         free(p);
+    }
+}
+// ----------------------------------------memory list------------------------------------------------
+
+void creatememlist (tmemlist *m){
+    *m = NULL;
+}
+
+bool isemptymem (tmemlist m){
+    return m == NULL;
+}
+
+void printmemory(tmemlist m){
+    mPos p ;
+    for(p=m;p!=NULL;p=p->next){
+     printf("%s %d %s %s",p->data.adress,p->data.size,p->data.date,p->data.method);
+    }
+}
+
+bool addmem (char adress,int size,char *date,char *method,tmemlist *m){
+    mPos q, p;
+
+    // Create a new node
+    if (!createNode(&q)) // if malloc failed
+        return false;
+
+    // Initialize the new node's data
+    strcpy(q->data.adress, &adress);
+    strcpy(q->data.method, method);
+    strcpy(q->data.date,date);
+    q->data.size = size;
+    q->next = NULL;
+
+    p = *m;
+    while(p->next != NULL){
+        p=p->next;
+        }
+    q->next = p->next;
+    p->next = q;
+
+    return true;
+}
+
+mPos findmem(char *adress,tmemlist *m) {
+    mPos p;
+    while(p != NULL && p->data.adress != adress);
+    return p;
+}
+
+void closemem(mPos p,tmemlist* m){
+    mPos q;
+
+    if(p==*m) //delete the first
+        *m = (*m)->next;
+    else if (p->next == NULL) { // Deleting the last element
+        for (q = *m; q->next != p; q = q->next);
+        q->next = NULL;
+    } else { //deleting from the middle
+        q=p->next;
+        p->data = q->data;
+        p->next = q->next;
+        p=q; //get rid of the duplicated node
+
+    }
+    free(p);
+}
+
+void FreeMemList(tmemlist m){
+    mPos p,q;
+    p = m;
+    while(m!=NULL){
+        q = p;
+        free(q);
+        p=p->next;
     }
 }
