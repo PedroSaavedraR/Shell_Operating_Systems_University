@@ -103,19 +103,19 @@ void DoCommand(char *pcs[]){
             return;
         }
     }
-    printf("Command %s not found", pcs[0]);
+    printf("Command %s not found\n", pcs[0]);
 }
 
 
 void authors (char **c) {
     if ( c[0]==NULL){
-        printf("Jose Martinez Estevez jose.martinez.estevez\nPedro Saavedra Rubinos pedro.saavedra.rubinos");
+        printf("Jose Martinez Estevez jose.martinez.estevez\nPedro Saavedra Rubinos pedro.saavedra.rubinos\n");
     }
     else{
         if (strcmp(c[0], "-l") == 0)
-            printf("jose.martinez.estevez\npedro.saavedra.rubinos");
+            printf("jose.martinez.estevez\npedro.saavedra.rubinos\n");
         else if (strcmp(c[0], "-n") == 0)
-            printf("Jose Martinez Estevez\nPedro Saavedra Rubinos");
+            printf("Jose Martinez Estevez\nPedro Saavedra Rubinos\n");
         else printf("error checking auth argument");
     }
 }
@@ -130,13 +130,13 @@ void help (char **c) {
     } else {
         for (i = 0; commands[i].cmd != NULL; i++) { //searches the function for the command we want help about
             if (!strcmp(c[0], commands[i].command)) {//name of the command
-                printf("%s\n%s", commands[i].command, commands[i].help); //help about the command
+                printf("%s\n%s\n", commands[i].command, commands[i].help); //help about the command
                 found = true;
                 break;
 
             }
         }
-        if(!found) printf("no help topics match %s", c[0]);
+        if(!found) printf("No help topics match %s\n", c[0]);
     }
 
 }
@@ -158,7 +158,7 @@ void historic(char **c) {
                 if ((strcpy(p,GetHistoricElement(&L,n))!=NULL)){
                     BreakLine(p, tr);
                     DoCommand(tr);
-                }   }  else printf("error, historic command not found");
+                }   }  else printf("Error: historic command not found\n");
         }
 
     }
@@ -168,7 +168,6 @@ void historic(char **c) {
 void pid(char *tr[]) {
     printf("%d", getpid());
 }
-
 
 void ppid(char *tr[]){
     printf("%d\n", getppid());
@@ -201,20 +200,29 @@ void date(char *c[]) {
     else if (strcmp(c[0],"-t")==0)
         printf("%d:%d:%d", tm.tm_hour, tm.tm_min, tm.tm_sec);
     else
-        printf("Date argument not found");
+        printf("Date argument not found\n");
 }
+
 void infosys (char *c[]) {
     struct utsname info;
     uname(&info);
     printf("%s\n%s\n%s\n%s\n%s\n", info.sysname,info.machine,info.nodename,info.version,info.release);
 }
 
-int IsDirectory(char *name){
-    struct stat s;
-    if(lstat(name, &s) == -1)
-        return 0;
+void cd(char *tr[]) {
+    char actualdir[MAX];
+    if (tr[0] == NULL && (getcwd(actualdir, MAX) != NULL))
+        printf("%s\n", actualdir);
+    else {
+        if (chdir(tr[0]) != 0) //chdir returns 0 if the directory change was successful and -1 if not
+            printf("Not executed: No such file or directory\n");
+    }
+}
 
-    return S_ISDIR(s.st_mode);
+void cwd(char *tr[]) {
+    char actualdir[MAX];
+    if (tr[0] == NULL && (getcwd(actualdir, MAX) != NULL))
+        printf("%s\n", actualdir);
 }
 
 char LetraTF (mode_t m)
@@ -252,11 +260,91 @@ char * strmode (mode_t m){
     return permisos;
 }
 
+void Open(char *tr[]) {
+    int i, mode = 0, df;
+    if (tr[0] == NULL) { //no parameter
+        printf("No file included, listing open files\n");
+        printopenfiles(files);
+        return;
+    } else {
+        for (i = 1; tr[i] != NULL; i++)
+            if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
+            else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
+            else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
+            else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
+            else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
+            else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
+            else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
+            else {
+                printf("Error opening, descriptor not included");
+                return;
+            }
+        if ((df = open(tr[0], mode, 0777)) == -1)
+            perror("Cannot open file\n");
+        else {
+            if (addfile(tr[0], df, mode, &files)) {
+                printf("Opened an entry to the list of opened files %s %d %d(%s) \n", tr[0], df, mode,
+                       strmode(mode));
+            } else printf("Couldn't add file\n");
+        }
+    }
+}
+
+
+
+void Close(char *tr[]) {
+    int df;
+    if (tr[0] == NULL || (df = atoi(tr[0])) < 0) { /*no hay parametro o el descriptor es menor que 0*/
+        printf("Printing open files\n");
+        printopenfiles(files);
+        return;
+    }
+    if (atoi(tr[0]) == 0 || atoi(tr[0]) == 1 || atoi(tr[0]) == 2) {
+        printf("Error, cant close\n");
+        return;
+    }
+    if (close(df) == -1) {
+        perror("Cannot close descriptor\n");
+    } else {
+        tPos p = findfile(df, files);
+        if (p != NULL) {
+            closefile(p, &files);
+        } else printf("Error, could not close file\n");
+    }
+}
+
+
+void Dup(char *tr[]) {
+    int df, duplicado;
+    char aux[2 * MAX], *p;
+
+    if (tr[0] == NULL || (df = atoi(tr[0])) < 0) { //no hay parametro o el descriptor es menor que 0
+        printf("Printing open files\n");
+        printopenfiles(files);
+        return;
+    }
+    duplicado = dup(df);
+    p = findfile(df, files)->data.filename;
+    sprintf(aux, "dup %d (%s)\n", df, p);
+    if (addfile(p, duplicado, fcntl(duplicado, F_GETFL), &files))
+        printf("Added file %s %d\n", aux, duplicado);
+    else printf("Error, could not add file\n");
+}
+
+int IsDirectory(char *name){
+    struct stat s;
+    if(lstat(name, &s) == -1) //returns information about the simbolic link of a file
+        return 0;
+
+    return S_ISDIR(s.st_mode);
+}
+
+
 int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
     struct stat fileStat;
     char path[1024] ,linkTarget[1024];
     snprintf(path, sizeof(path), "%s/%s", dirname, filename);
-    if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+    if (lstat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
         return -1;
     }
     if(acc) {
@@ -265,10 +353,19 @@ int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
         printf("%s",time);
     }
     if(longl){
-        struct passwd *pws = getpwuid(fileStat.st_uid);
-        struct group *grp = getgrgid(fileStat.st_gid);
-        printf("%ld(%ld) %s %s %s",fileStat.st_nlink,fileStat.st_ino,pws->pw_name,grp->gr_name,strmode(fileStat.st_mode));
-    }
+
+        struct passwd *pws = getpwuid(fileStat.st_uid);//search the user database for an entry with a matching uid (user id)
+        struct group *grp = getgrgid(fileStat.st_gid);  // search the group database for an entry with a matching gid (group id)
+        printf(
+                "%ld(%ld) %s %s %s\n",
+                fileStat.st_nlink,
+                fileStat.st_ino,
+                pws != NULL ? pws->pw_name : "*******",
+                grp != NULL ? grp->gr_name : "*******",
+                strmode(fileStat.st_mode)
+        );
+    } // hardlinks,inode,user,group and permissions
+    printf("%ld\t%s\n", (long)fileStat.st_size, filename);
     if(link && S_ISLNK(fileStat.st_mode)){
         int length = readlink(path,linkTarget,sizeof(linkTarget) -1);
         if(length!=-1){
@@ -276,7 +373,6 @@ int PrintInfoFile(char *filename, char *dirname, int longl, int link, int acc) {
             printf("link: %s \n",linkTarget);}
     }else printf(" ");
 
-    printf("%ld\t%s\n", (long)fileStat.st_size, filename);
     return 0;
 }
 
@@ -339,7 +435,7 @@ void listdir(char *tr[]) {
         return;
     }
     for (;tr[i]!=NULL;i++) {
-        if (ListDir(tr[i], ishid, islong, isacc, islink) == -1) {
+        if (ListDir(tr[i], ishid, islong, islink, isacc) == -1) {
             printf("Cannot list %s: %s\n", tr[i], strerror(errno));
         }
     }
@@ -351,10 +447,11 @@ void erase(char *tr[]){
     else{
         for(int i=0;tr[i] != NULL;i++){
             if(remove(tr[i]) != 0)
-                printf("Could not remove %s",tr[i]);
-            else    printf("Removed %s",tr[i]);
+                printf("Could not remove %s\n",tr[i]);
+            else    printf("Removed %s\n",tr[i]);
         }
-    }}
+    }
+}
 
 void auxrec(char *dir,int hid,int longl, int acc,int link){
     DIR *p;
@@ -363,7 +460,7 @@ void auxrec(char *dir,int hid,int longl, int acc,int link){
         printf("error recursiva");
     printf("--------%s--------\n",dir);
     while((d = readdir(p)) != NULL){
-        if(!hid && d->d_name[0] == '.')
+        if(!hid && d->d_name[0] == '.') //if the file is not hidden, then continue
             continue;
         if (PrintInfoFile(d->d_name,dir , longl, link, acc) == -1)
             printf("Cannot list %s: %s\n", d->d_name, strerror(errno));
@@ -376,7 +473,7 @@ void auxrec(char *dir,int hid,int longl, int acc,int link){
         char path[1024];
         snprintf(path, sizeof(path), "%s/%s", dir, d->d_name);
         if (stat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
-            printf("error");
+            printf("error: %s\n",strerror(errno));
         }
         if(S_ISDIR(fileStat.st_mode)){//if file is a directory, call inside it
             auxrec(path,hid,longl,acc,link);
@@ -392,7 +489,7 @@ void auxrev(char *dir,int hid,int longl, int acc,int link){
     DIR *p;
     struct dirent *d;
     if ((p = opendir(dir)) == NULL)
-        printf("error");
+        printf("error: %s\n",strerror(errno));
 
     while ((d = readdir(p)) != NULL) {
         if (!hid && d->d_name[0] == '.')
@@ -401,7 +498,7 @@ void auxrev(char *dir,int hid,int longl, int acc,int link){
         char path[1024];
         snprintf(path, sizeof(path), "%s/%s", dir, d->d_name);
         if (stat(path, &fileStat) == -1) {
-            printf("error");
+            printf("error: %s",strerror(errno));
         }
         if(S_ISDIR(fileStat.st_mode)){//if file is a directory, call inside it
             auxrev(path,hid,longl,acc,link);
@@ -433,7 +530,7 @@ void reclist (char *tr[]){
         }
         for(;tr[i] != NULL;i++){//check directories given and start reading
             if(!IsDirectory(tr[i]))
-                printf("error");
+                printf("Error: %s is not a directory\n",tr[i]);
             else{
                 auxrec(tr[i],ishid,islong,isacc,islink);
             }
@@ -452,7 +549,7 @@ void revlist (char *tr[]){
             else if (!strcmp(tr[i], "-acc")){isacc = 1;}
         }
         for(;tr[i] != NULL;i++){ //check directories given and start reading
-            if(!IsDirectory(tr[i])) printf("error");
+            if(!IsDirectory(tr[i])) printf("Error: %s is not a directory\n",tr[i]);
             else{
                 auxrev(tr[i],ishid,islong,isacc,islink);
             }
@@ -463,8 +560,10 @@ void revlist (char *tr[]){
 void delaux(char *dir){
     DIR *p;
     struct dirent *d;
-    if ((p = opendir(dir)) == NULL)
-        printf("error");//open directory
+
+    if ((p = opendir(dir)) == NULL){
+        printf("Error: Trying to delete the current working directory\n");//open directory
+        return;}
 
     while ((d = readdir(p)) != NULL) {
         if (!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))//to avoid entering unwanted directories
@@ -472,17 +571,17 @@ void delaux(char *dir){
         struct stat fileStat;
         char path[1024];
         snprintf(path, sizeof(path), "%s/%s", dir, d->d_name);
-        if (stat(path, &fileStat) == -1)
-            printf("error");
+        if (lstat(path, &fileStat) == -1)
+            printf("error\n");
         if(S_ISDIR(fileStat.st_mode)){
             delaux(path);//call again on inside directories
         }else {
-            if (remove(path) != 0)//delete files
-                printf("error deleting");
+            if (remove(path) != 0) //delete files
+                printf("error deleting\n");
         }
     }
     if (closedir(p) == -1) { //after finishing, the directory should be closed
-        printf("Error closing directory %s: %s\n", d->d_name, strerror(errno));
+        printf("Error closing directory %s: %s\n", dir, strerror(errno));
     }
     if(rmdir(dir) != 0)//delete current directory
         printf("error");
@@ -490,60 +589,12 @@ void delaux(char *dir){
 
 void delrec(char *tr[]){
     if (tr[0] == NULL)
-        printf("Not executed: No such file or directory");
-    for(int i=0;tr[i] != NULL;i++){
+        printf("Not executed: No such file or directory\n");
+    else
+        for(int i=0;tr[i] != NULL;i++){
+            delaux(tr[i]);//calls on each directory given
 
-        delaux(tr[i]);//calls on each directory given
-
-    }}
-
-void cd(char *tr[]) {
-
-
-    if (tr[0] == NULL) {
-        printf("Not executed: No such file or directory");
-    } else {
-        if (chdir(tr[0]) != 0) //chdir returns 0 if the directory change was successful and -1 if not
-            printf("Not executed: No such file or directory");
-    }
-}
-
-void cwd(char *tr[]) {
-    char actualdir[MAX];
-    if (tr[0] == NULL && (getcwd(actualdir, MAX) != NULL))
-        printf("%s", actualdir);
-}
-
-void Open(char *tr[]) {
-    int i, mode = 0, df;
-    if (tr[0] == NULL) { //no parameter
-        printf("No file included, listing open files\n");
-        printopenfiles(files);
-        return;
-    } else {
-        for (i = 1; tr[i] != NULL; i++)
-            if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
-            else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
-            else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
-            else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
-            else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
-            else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
-            else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
-            else {
-                printf("error, opening descriptor not included");
-                return;
-            }
-        if ((df = open(tr[0], mode, 0777)) == -1)
-            perror("Cannot open file");
-        else {
-            if (addfile(tr[0], df, mode, &files)) {
-                printf("Opened an entry to the list of opened files %s %d %d(%s) ", tr[0], df, mode,
-                       strmode(mode));
-            } else printf("Couldn't add file");
-        }
-    }
-}
-
+        }}
 
 void makefile (char *tr[]) {
     char actualdir[MAX];
@@ -564,45 +615,9 @@ void makedir (char *tr[]){
     else    printf("Directory %s created",tr[0]);
 }
 
-void Close(char *tr[]) {
-    int df;
-    if (tr[0] == NULL || (df = atoi(tr[0])) < 0) { /*no hay parametro o el descriptor es menor que 0*/
-        printf("Printing open files\n");
-        printopenfiles(files);
-        return;
-    }
-    if (atoi(tr[0]) == 0 || atoi(tr[0]) == 1 || atoi(tr[0]) == 2) {
-        printf("error, cant delete");
-        return;
-    }
-    if (close(df) == -1) {
-        perror("Cannot close descriptor");
-    } else {
-        tPos p = findfile(df, files);
-        if (p != NULL) {
-            closefile(p, &files);
-        } else printf("Error, could not close file\n");
-    }
+void allocate(char *tr[]){
+
 }
-
-
-void Dup(char *tr[]) {
-    int df, duplicado;
-    char aux[2 * MAX], *p;
-
-    if (tr[0] == NULL || (df = atoi(tr[0])) < 0) { //no hay parametro el descriptor es menor que 0
-        printf("Printing open files\n");
-        printopenfiles(files);
-        return;
-    }
-    duplicado = dup(df);
-    p = findfile(df, files)->data.filename;
-    sprintf(aux, "dup %d (%s)", df, p);
-    if (addfile(p, duplicado, fcntl(duplicado, F_GETFL), &files))
-        printf("Added file %s %d", aux, duplicado);
-    else printf("Error, could not add file");
-};
-
 
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
@@ -610,7 +625,7 @@ int main(int argc, char *argv[]) {
     char *pcs[MAX / 2];
     createfilelist(&files);
     if (!initfilelist(&files)) {
-        printf("error, could not initialize filelist");
+        printf("Error, could not initialize filelist");
         return 1;
     }
 
@@ -621,7 +636,6 @@ int main(int argc, char *argv[]) {
         if (-1 == AddHistoricElement(&L, line)) { printf("error"); }
         BreakLine(line, pcs);
         DoCommand(pcs);
-        printf("\n");
     }
     return 0;
 }
