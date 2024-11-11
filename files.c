@@ -114,14 +114,23 @@ bool isemptymem (tmemlist m){
     return m == NULL;
 }
 
-void printmemory(tmemlist m){
-    mPos p ;
-    for(p=m;p!=NULL;p=p->next){
-     printf("%s %d %s %s",p->data.adress,p->data.size,p->data.date,p->data.method);
+
+void printmemory(tmemlist m, char *method) {//bhb
+    mPos p;
+    if (strcmp(method, "all") == 0) {
+        for (p = m; p != NULL; p = p->next)
+            printf("%s %d %s %s %d %s", p->data.adress, p->data.size, p->data.date, p->data.method,p->data.kdf,p->data.filename);
+    } else {
+        for (p = m; p != NULL; p = p->next) {
+            if (strcmp(p->data.method, method) == 0)
+                printf("%s %d %s %s %d %s", p->data.adress, p->data.size, p->data.date, p->data.method,p->data.kdf,p->data.filename);
+        }
     }
 }
 
-bool addmem (char adress,int size,char *date,char *method,tmemlist *m){
+
+
+bool addmem (char adress,int size,char *date,char *method,char *filename,int kdf,tmemlist *m){
     mPos q, p;
 
     // Create a new node
@@ -132,7 +141,8 @@ bool addmem (char adress,int size,char *date,char *method,tmemlist *m){
     strcpy(q->data.adress, &adress);
     strcpy(q->data.method, method);
     strcpy(q->data.date,date);
-    q->data.size = size;
+    strcpy(q->data.filename,filename);
+    q->data.size = size;q->data.kdf = kdf;
     q->next = NULL;
 
     p = *m;
@@ -145,9 +155,15 @@ bool addmem (char adress,int size,char *date,char *method,tmemlist *m){
     return true;
 }
 
-mPos findmem(char *adress,tmemlist *m) {
-    mPos p;
+mPos findmemad(char *adress,tmemlist *m) {
+    mPos p = *m;
     while(p != NULL && p->data.adress != adress);
+    return p;
+}
+
+mPos findmemsz(int size,tmemlist *m){
+    mPos p = *m;
+    while(p != NULL && p->data.size != size);
     return p;
 }
 
