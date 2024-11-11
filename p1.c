@@ -25,6 +25,7 @@ HLIST L;
 tfilelist files;
 tmemlist memlist;
 
+typedef int key_t;
 typedef struct Item{
     char *command;
     void (*cmd)(char**);
@@ -619,15 +620,135 @@ void makedir (char *tr[]){
     else    printf("Directory %s created",tr[0]);
 }
 
-void allocate(char *tr[]){
+char* strdate(){
+    char *date;
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    strftime(date,sizeof(date),"%b %d %H",&tm);
+    return date;
+}
+
+void *String_to_ULong(char *s) {
+    unsigned long long *p = malloc(sizeof(unsigned long long));
+    if (p == NULL) {
+        return NULL;
+    }
+    *p = strtoull(s, NULL, 16);
+    return p;
+}
+
+
+void * ObtenerMemoriaShmget (key_t clave, size_t tam)
+{
+    void * p;
+    int aux,id,flags=0777;
+    struct shmid_ds s;
+
+    if (tam)     /*tam distito de 0 indica crear */
+        flags=flags | IPC_CREAT | IPC_EXCL; /*cuando no es crear pasamos de tamano 0*/
+    if (clave==IPC_PRIVATE)  /*no nos vale*/
+    {errno=EINVAL; return NULL;}
+    if ((id=shmget(clave, tam, flags))==-1)
+        return (NULL);
+    if ((p=shmat(id,NULL,0))==(void*) -1){
+        aux=errno;
+        if (tam)
+            shmctl(id,IPC_RMID,NULL);
+        errno=aux;
+        return (NULL);
+    }
+    shmctl (id,IPC_STAT,&s); /* si no es crear, necesitamos el tamano, que es s.shm_segsz*/
+    addmem(p, s.shm_segs,strdate,"CreateShared",clave,memlist);
+    return (p);
+}
+
+void do_AllocateCreateshared (char *tr[])
+{
+    key_t cl;
+    size_t tam;
+    void *p;
+
+    if (tr[0]==NULL || tr[1]==NULL) {
+        printmemory(memlist,"shared");
+        return;
+    }
+
+    cl=(key_t)  strtoul(tr[0],NULL,10);
+    tam=(size_t) strtoul(tr[1],NULL,10);
+    if (tam==0) {
+        printf ("No se asignan bloques de 0 bytes\n");
+        return;
+    }
+    if ((p=ObtenerMemoriaShmget(cl,tam))!=NULL)
+        printf ("Asignados %lu bytes en %p\n",(unsigned long) tam, p);
+    else
+        printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
+}
+/////
+void do_AllocateShared (char *tr[])
+{
+    key_t cl;
+    size_t tam;
+    void *p;
+
+    if (tr[0]==NULL) {
+        printmemory(memlist,"shared");
+        return;
+    }
+
+    cl=(key_t)  strtoul(tr[0],NULL,10);
+
+    if ((p=ObtenerMemoriaShmget(cl,0))!=NULL)
+        printf ("Asignada memoria compartida de clave %lu en %p\n",(unsigned long) cl, p);
+    else
+        printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
+}
+
+void * MapearFichero (char * fichero, int protection)
+{
+    int df, map=MAP_PRIVATE,modo=O_RDONLY;
+    struct stat s;
+    void *p;
+
+    if (protection&PROT_WRITE)
+        modo=O_RDWR;
+    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+        return NULL;
+    if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
+        return NULL;
+    addmem(p,s.st_size,strdate,"map","",df,&memlist);
+/* Guardar en la lista    InsertarNodoMmap (&L,p, s.st_size,df,fichero); */
+/* Gurdas en la lista de descriptores usados df, fichero*/
+    return p;
+}
+//////
+void do_AllocateMmap(char *arg[])
+{
+    char *perm;
+    void *p;
+    int protection=0;
+
+    if (arg[0]==NULL)
+    {printmemory(memlist,"map"); return;}
+    if ((perm=arg[1])!=NULL && strlen(perm)<4) {
+        if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
+        if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
+        if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
+    }
+    if ((p=MapearFichero(arg[0],protection))==NULL)
+        perror ("Imposible mapear fichero");
+    else
+        printf ("fichero %s mapeado en %p\n", arg[0], p);
+}
+
+void allocate(char *tr[]){ //
 if(tr[0] == NULL)
-    printmemory(memlist);
+    printmemory(memlist,"all");
 else{
     if (strcmp(tr[1], "-malloc")==0) {
         time_t now = time(NULL);
         struct tm *local = localtime(&now);
-        char date[20];
-        strftime(date,sizeof(date),"%b %d %H",local);
+
         int size = atoi(tr[2]);
         if (size <= 0) {
             printf("Invalid size\n");
@@ -638,9 +759,11 @@ else{
             printf("Memory allocation failed.\n");
             return;
         }
-        addmem(*address,size,date,"malloc",&memlist);
+        addmem(*address,size,strdate(),"malloc","",&memlist);
     }
-    else if (strcmp(tr[1], "-createshared")==0){}
+    else if (strcmp(tr[1], "-createshared")==0){
+        do_AllocateCreateshared (&tr[2]);
+    }
     else if (strcmp(tr[1], "-mmap")==0){}
     else if (strcmp(tr[1], "-shared")==0){}
 }}
@@ -649,20 +772,13 @@ void deallocate(char *tr[]){
     if(tr[0] == NULL)
         printmemory(memlist);
     else{
-        if (strcmp(tr[1], "-malloc")==0) {
-
-            int size = atoi(tr[2]);
-            if (size <= 0) {
-                printf("Invalid size\n");
-                return;
-            }
-            char *address =  malloc(sizeof(size));
-            if (address == NULL) {
-                printf("Memory allocation failed.\n");
-                return;
-            }
-            addmem(*address,size,date,"malloc",&memlist);
-        }
+        if (strcmp(tr[0], "-malloc")==0) {
+            if(!isemptymem(memlist){
+            mPos p = findmemsz(tr[1],memlist);
+            if p = NULL
+                    return -1;
+            else closemem(p,memlist);
+        }}
         else if (strcmp(tr[1], "-createshared")==0){}
         else if (strcmp(tr[1], "-mmap")==0){}
         else if (strcmp(tr[1], "-shared")==0){}
