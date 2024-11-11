@@ -1,6 +1,6 @@
 //
 // Created by pedro on 26/09/2024.
-//
+// //
 
 #ifndef S0_P0_FILES_H
 #define S0_P0_FILES_H
@@ -18,6 +18,8 @@ typedef struct memory{
     int size;
     char *date;
     char *method;
+    int kdf;
+    char *filename;
 }tmemory;
 
 typedef struct tNode* tPos;
@@ -53,9 +55,11 @@ void FreeFileList(tfilelist);
 
 bool isemptymem(tmemlist);
 void creatememlist(tmemlist*);
-void printmemory(tmemlist);
-bool addmem(char address,int size,char *date,char *method, tmemlist*);
-mPos findmem(char* adress,tmemlist*);
+void printmemory(tmemlist, char*);
+
+bool addmem(char address,int size,char *date,char *method,char *filename,int kdf, tmemlist*);
+mPos findmeadm(char* adress,tmemlist*);
+mPos findmemsz(int siize,tmemlist*);
 void closemem(mPos,tmemlist*);
 void FreeMemList(tmemlist);
 
