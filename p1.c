@@ -22,6 +22,7 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <errno.h>
 #include <pwd.h>
 #include <grp.h>
+#include <limits.h>
 
 
 HLIST L;
@@ -758,35 +759,55 @@ void do_AllocateCreateshared (char *tr[])
         printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
 }
 
-void allocate(char *tr[]){ //
-if(tr[0] == NULL)
-    printmemory(memlist,"all");
-else{
-    if (strcmp(tr[1], "-malloc")==0) {
-        int size = atoi(tr[2]);
-        if (size <= 0) {
-            printf("Invalid size\n");
-            return;
-        }
-        char *address =  malloc(sizeof(size));
+void allocate(char *tr[]) {
+    if (tr[0] == NULL) {
+        printmemory(memlist, "all");}
+    if (tr[1] == NULL) { // Check if the argument is missing
+        printf("Size argument is missing.\n");
+        return;
+    }
+    if (strchr(tr[1], '.') != NULL) {
+        printf("Invalid size: floats are not allowed\n");
+        return;
+    }
+    char *endptr;
+    long size = strtol(tr[1], &endptr, 10);
+
+    if (*endptr != '\0' || endptr == tr[1]) {
+        printf("Invalid size: '%s' is not a number.\n", tr[1]);
+        return;
+    }
+    if (size <= 0) {
+        printf("Invalid size: must be a positive number.\n");
+        return;
+    }
+    if (size > INT_MAX) {
+        printf("Invalid size: number is too large.\n");
+        return;
+    }
+    else if (strcmp(tr[0], "-malloc") == 0) {
+
+        char *address = malloc(size);
         if (address == NULL) {
             printf("Memory allocation failed.\n");
             return;
         }
-        printf("allocated %d bits at %s\n",atoi(tr[2]),address);
-        addmem(*address,size,strdate(),"malloc","",0,&memlist);
+        printf("allocated %ld bits at %p\n", size, (void *)address);
+        addmem(address, size, strdate(), "malloc", "", 0, &memlist);
+
     }
-    else if (strcmp(tr[1], "-createshared")==0){
-        do_AllocateCreateshared (&tr[2]);
-    }
-    else if (strcmp(tr[1], "-mmap")==0){
-        do_AllocateMmap(&tr[2]);
-    }
-    else if (strcmp(tr[1], "-shared")==0){
-        do_AllocateShared(&tr[2]);
-    }
+    else if (strcmp(tr[0], "-createshared") == 0) {
+        do_AllocateCreateshared(&tr[1]);
+    } else if (strcmp(tr[0], "-mmap") == 0) {
+        do_AllocateMmap(&tr[1]);
+    } else if (strcmp(tr[0], "-shared") == 0) {
+        do_AllocateShared(&tr[1]);
+    } else{
+        printf("error\n");
+        return;
 }
 }
+
 
 void deallocate(char *tr[]){
     if(tr[0] == NULL)
