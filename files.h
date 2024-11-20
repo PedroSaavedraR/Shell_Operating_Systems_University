@@ -14,12 +14,12 @@ typedef struct file{
 }tfile;
 
 typedef struct memory{
-    char *adress;
+    char *adress[MAX];
     int size;
-    char *date;
-    char *method;
+    char *date[MAX];
+    char *method[MAX];
     int kdf;
-    char *filename;
+    char *filename[MAX];
 }tmemory;
 
 typedef struct tNode* tPos;
@@ -57,8 +57,8 @@ bool isemptymem(tmemlist);
 void creatememlist(tmemlist*);
 void printmemory(tmemlist, char*);
 
-bool addmem(char address,int size,char *date,char *method,char *filename,int kdf, tmemlist*);
-mPos findmeadm(char* adress,tmemlist*);
+bool addmem(char *address,int size,char *date,char *method,char *filename,int kdf, tmemlist*);
+mPos findmemad(char* adress,tmemlist*);
 mPos findmemsz(int siize,tmemlist*);
 void closemem(mPos,tmemlist*);
 void FreeMemList(tmemlist);
