@@ -11,6 +11,13 @@ bool createNode(tPos *p){
     return *p != NULL; //if memory allocation was successful return true, else return false
 }
 
+bool createNodem(mPos *p){
+    *p = malloc(sizeof(struct mNode)); //allocates memory for a new node
+    return *p != NULL; //if memory allocation was successful return true, else return false
+}
+
+
+
 
 void createfilelist (tfilelist *l){
     *l = NULL;
@@ -119,41 +126,49 @@ void printmemory(tmemlist m, char *method) {//bhb
     mPos p;
     if (strcmp(method, "all") == 0) {
         for (p = m; p != NULL; p = p->next)
-            printf("%s %d %s %s %d %s", p->data.adress, p->data.size, p->data.date, p->data.method,p->data.kdf,p->data.filename);
+            printf("%s %d %s %s %d %s\n", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf,
+                   p->data.filename);
     } else {
         for (p = m; p != NULL; p = p->next) {
             if (strcmp(p->data.method, method) == 0)
-                printf("%s %d %s %s %d %s", p->data.adress, p->data.size, p->data.date, p->data.method,p->data.kdf,p->data.filename);
+                printf("%s %d %s %s %d %s\n", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf,
+                       p->data.filename);
         }
     }
 }
 
-
-
-bool addmem (char adress,int size,char *date,char *method,char *filename,int kdf,tmemlist *m){
+bool addmem(char *address, int size, char *date, char *method, char *filename, int kdf, tmemlist *m) {
     mPos q, p;
 
-    // Create a new node
-    if (!createNode(&q)) // if malloc failed
+    if (!createNodem(&q)) {
         return false;
-
-    // Initialize the new node's data
-    strcpy(q->data.adress, &adress);
+    }
+    snprintf(q->data.adress, MAX, "%p", (void *)address);
     strcpy(q->data.method, method);
-    strcpy(q->data.date,date);
-    strcpy(q->data.filename,filename);
-    q->data.size = size;q->data.kdf = kdf;
+    strncpy(q->data.date, date, MAX - 1);
+    strncpy(q->data.filename, filename, MAX- 1);
+    q->data.size = size;
+    q->data.kdf = kdf;
     q->next = NULL;
 
+    // If the list is empty, set this node as the head
+    if (*m == NULL) {
+        *m = q;
+        return true;
+    }
+
+    // Traverse to the end of the list
     p = *m;
-    while(p->next != NULL){
-        p=p->next;
-        }
-    q->next = p->next;
+    while (p->next != NULL) {
+        p = p->next;
+    }
+
+    // Append the new node
     p->next = q;
 
     return true;
 }
+
 
 mPos findmemad(char *adress,tmemlist *m) {
     mPos p = *m;
