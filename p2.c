@@ -723,7 +723,7 @@ void * MapearFichero (char * fichero, int protection)
         return NULL;
     if ((p = mmap (NULL,s.st_size, protection,map,df,0)) == MAP_FAILED)
         return NULL;
-    addmem(p,s.st_size,Date,"map",fichero,df,&memlist);
+    addmem(p,s.st_size,Date,"mapped",fichero,df,&memlist);
     addfile(fichero, df, modo, &files);
     return p;
 }
@@ -739,7 +739,7 @@ void do_AllocateMmap(char *arg[])
         if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
     }
     if ((p=MapearFichero(arg[0],protection))==NULL)
-        perror ("Cannot map file");
+        perror ("Cannot map file\n");
     else
         printf ("file %s mapped in %p\n", arg[0], p);
 }
@@ -1220,9 +1220,6 @@ void memory (char *tr[]){
         printf("Option %s not contemplated\n", tr[0]);
 
 }
-
-#include <stdio.h>
-#include <stdlib.h>
 
 void auxrecurse(int n) {
     int array[2048];
