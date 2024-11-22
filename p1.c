@@ -723,7 +723,7 @@ void * MapearFichero (char * fichero, int protection)
         return NULL;
     if ((p = mmap (NULL,s.st_size, protection,map,df,0)) == MAP_FAILED)
         return NULL;
-    addmem(p,s.st_size,Date,"map","",df,&memlist);
+    addmem(p,s.st_size,Date,"map",fichero,df,&memlist);
     addfile(fichero, df, modo, &files);
     return p;
 }
@@ -803,15 +803,18 @@ void do_DeallocateDelkey (char *args[])
     char *key=args[0];
 
     if (key==NULL || (clave=(key_t) strtoul(key,NULL,10))==IPC_PRIVATE){
-        printf ("      delkey necesita clave_valida\n");
+        printf ("delkey needs a valid key\n");
         return;
     }
     if ((id=shmget(clave,0,0666))==-1){
-        perror ("shmget: imposible obtener memoria compartida\n");
+        perror ("shmget: cannot obtain shared memory\n");
         return;
     }
-    if (shmctl(id,IPC_RMID,NULL)==-1)
-        perror ("shmctl: imposible eliminar memoria compartida\n");
+    if (shmctl(id,IPC_RMID,NULL)==-1) {
+        perror("shmctl: cannot delete shared memory\n");
+        return;
+    }
+    printf("Dealocated delkey %d", clave);
 }
 
 void allocate(char *tr[]) {
@@ -924,8 +927,7 @@ void deallocate(char *tr[]) {
         } else closemem(p, &memlist);
     }
     else if (strcmp(tr[0], "-mmap")==0){
-        void* adr = (void*) strtoull(tr[0],NULL,16);
-        mPos p = findmemad(adr,&memlist);
+        mPos p = findmemfl(tr[1],&memlist);
         if (p == NULL)
         {
             printf("Error\n");
