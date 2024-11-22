@@ -72,8 +72,12 @@ void memfill (char *[]);
 void memdump (char*[]);
 void readfile(char*[]);
 void memory(char*[]);
+void Read (char*[]);
+void writefile(char*[]);
+void Write(char*[]);
+void recurse (char*[]);
 
-tItem commands[30] =  {
+tItem commands[34] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
@@ -111,6 +115,13 @@ tItem commands[30] =  {
         {"memdump",memdump,"dumps the contents of cont bytes of memory at address addr to the screen. Dumps hex codes, and for printable characters the associated charrcter"},
         {"readfile",readfile,"Reads cont bytes of a file into memory address addr"},
         {"memory", memory, "[-funcs] Prints the addresses of 3 program functions and 3 library functions"},
+        {"read", Read, "Read df addr cont  Reads cont bytes of a file with file descriptor df into memory address addr "},
+       {"write",Write,"Write df addr cont writes to a file with descriptor df bytes starting at memory address addr"},
+        {"writefile",writefile,"Writefile file addr cont Writes to a file cont bytes start"},
+        {"recurse", recurse, "executes the recursive function n times. This funcion has an \n"
+                             "automatic array of size 2048. a static array of size 2048 and prints the\n"
+                             " addresses of both arrays and its parameter (as well as the number o \n"
+                             "recursion) before calling itself"},
         {NULL, NULL, "\0"},
 };
 
@@ -310,7 +321,7 @@ void Open(char *tr[]) {
             else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
             else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
             else {
-                printf("Error opening, descriptor not included");
+                printf("Error opening, descriptor not included\n");
                 return;
             }
         if ((df = open(tr[0], mode, 0777)) == -1)
@@ -713,18 +724,15 @@ void * MapearFichero (char * fichero, int protection)
     if ((p = mmap (NULL,s.st_size, protection,map,df,0)) == MAP_FAILED)
         return NULL;
     addmem(p,s.st_size,Date,"map","",df,&memlist);
-/* Gurdas en la lista de descriptores usados df, fichero*/
+    addfile(fichero, df, modo, &files);
     return p;
 }
-//////
 void do_AllocateMmap(char *arg[])
 {
     char *perm;
     void *p;
     int protection=0;
 
-    if (arg[0]==NULL)
-    {printmemory(memlist,"map"); return;}
     if ((perm=arg[1])!=NULL && strlen(perm)<4) {
         if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
         if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
@@ -741,11 +749,15 @@ void do_AllocateShared (char *tr[])
     key_t cl;
     void *p;
 
-    if (tr[0]==NULL)
-    {printmemory(memlist,"shared"); return;}
-
     cl=(key_t)  strtoul(tr[0],NULL,10);
-    long size = findmemsh(cl,&memlist)->data.size;
+    mPos q = findmemsh(cl,&memlist); //messes up abstraction but saves a search through the memory list
+
+    if( q == NULL){
+        printf("Error,key does not exist\n");
+        return;
+    }
+
+    long size = q->data.size;
 
     if ((p=ObtenerMemoriaShmget(cl,0))!=NULL && addmem(p,size,strdate(),"shared","",cl,&memlist))
         printf ("Shared memory of key %lu assigned  in %p\n",(unsigned long) cl, p);
@@ -754,14 +766,28 @@ void do_AllocateShared (char *tr[])
 }
 
 void do_AllocateCreateshared(char *tr[]) {
-    key_t cl = (key_t)strtoul(tr[1], NULL, 10);//
-    size_t tam = (size_t)strtoul(tr[2], NULL, 10);
+
+    key_t cl;
+    size_t tam;
+
+    if(tr[1] == NULL){
+        printmemory(memlist,"shared");
+        return;
+    }
+
+    cl = (key_t)strtoul(tr[1], NULL, 10);
+
+    if(tr[2] == NULL)
+        tam = 128;
+    else
+        tam = (size_t)strtoul(tr[2], NULL, 10);
+
     void *p;
     char* date = strdate();
     p = ObtenerMemoriaShmget(cl, tam);
 
     if (p != NULL) {
-        printf("Allocated %zu bytes at address %p\n", tam, p);
+        printf("Allocated %zu bytes at address %p with key %u\n", tam, p,cl);
         if (!addmem(p, tam, date, "shared", "", cl, &memlist)) {
             printf("Error: Unable to record memory allocation.\n");
         }
@@ -781,7 +807,7 @@ void do_DeallocateDelkey (char *args[])
         return;
     }
     if ((id=shmget(clave,0,0666))==-1){
-        perror ("shmget: imposible obtener memoria compartida");
+        perror ("shmget: imposible obtener memoria compartida\n");
         return;
     }
     if (shmctl(id,IPC_RMID,NULL)==-1)
@@ -816,6 +842,10 @@ void allocate(char *tr[]) {
             return;
         }
     }
+    if (strcmp(tr[0], "-mmap") == 0) {
+        do_AllocateMmap(&tr[1]);
+        return;
+    }
 
     if (strchr(tr[1], '.') != NULL) {
         printf("Invalid size: floats are not allowed\n");
@@ -845,23 +875,18 @@ void allocate(char *tr[]) {
             printf("Memory allocation failed.\n");
             return;
         }
-        void* adr = &tr[1];
+        void* adr = (void *) address;
         printf("allocated %ld bytes at %p\n", size, adr);
         if (!addmem(adr, size, date, "malloc", "", 0, &memlist)) {
             fprintf(stderr, "Error: Could not add memory record. Freeing memory.\n");
             free(address);  // Free only if tracking fails
-        }
-    }
+        }}
     else if (strcmp(tr[0], "-createshared") == 0) {
         do_AllocateCreateshared(tr);
 
-    } else if (strcmp(tr[0], "-mmap") == 0) {
-        do_AllocateMmap(&tr[1]);
-
     } else if (strcmp(tr[0], "-shared") == 0) {
         do_AllocateShared(&tr[1]);
-    } else {
-        printf("error\n");
+
     }
 }
 
@@ -923,6 +948,16 @@ void deallocate(char *tr[]) {
     }
 }
 
+void FillMemory (void *adr, size_t cont, unsigned char byte)
+{
+    unsigned char *arr=(unsigned char *) adr;
+    size_t i;
+
+    for (i=0; i<cont;i++)
+        arr[i]=byte;
+}
+
+
 void memfill(char* tr[]) {
     if(tr[0] == NULL){
         printmemory(memlist,"all");
@@ -938,10 +973,12 @@ void memfill(char* tr[]) {
     if(tr[1] != NULL) {
         size =(size_t) strtoull(tr[1],NULL,10);
         if (tr[2] != NULL) {
-            cont = tr[2][0];
+
+            cont = tr[2][0] == '"' ?  tr[2][1] != '\0' ? tr[2][1] : '"' : tr[2][0];
         }
     }
-    memset(adr, cont, size);
+    printf("Filling %zu bytes of memory with %02X (%c) at adress %p\n",size,cont,cont,adr);
+    FillMemory(adr,size,cont);
 }
 
 void memdump(char *tr[]) {
@@ -949,21 +986,19 @@ void memdump(char *tr[]) {
         printmemory(memlist,"all");
         return;
     }
-    int size = tr[1] != NULL ? atoi(tr[1]) : 128;
-    for (int i = 0; i < size; i++) {
-        // Print hex representation
-        printf("%02X ", tr[0][i]);
-        if ((i + 1) % 16 == 0 || i == size - 1) {
-            // Align to print ASCII characters on the right
-            int pad = ((16 - (i % 16) - 1) % 16) * 3;
-            for (int j = 0; j < pad; j++) printf(" ");
 
-            printf(" | ");
-            for (int j = i - (i % 16); j <= i; j++) {
-                printf("%c", isprint(tr[0][j]) ? tr[0][j] : '.');
+    void *adr = (void *) strtoull(tr[0],NULL,16);
+    int size = tr[1] != NULL ? atoi(tr[1]) : 128;
+    unsigned char *ptr = (unsigned char *)adr;
+    printf("Dumping %u bytes from address %p",size,adr);
+    for (int i = 0; i < size; i++) {
+        printf("%02X ", ptr[i]);
+        if((i+1) % 16 == 0 || i == size -1){
+            printf("\n");
+            for(int j = i - (i%16);j <= i;j++){
+                printf("%c  ", isprint(ptr[j]) ? ptr[j] : ' ');
             }
             printf("\n");
-
         }
     }
 }
@@ -1009,7 +1044,108 @@ void readfile (char *tr[])
         printf ("read %lld bytes of %s in %p\n",(long long) n,tr[0],p);
 }
 
+void Read(char *tr[]) {
+    void *p;
+    size_t cont = -1;
+    ssize_t n;
+    int fd;
+    if (tr[0] == NULL || tr[1] == NULL || tr[2] == NULL) {
+        printf("Invalid arguments\n");
+        return;
+    }
+    fd = atoi(tr[0]);
+    if (fd <= 0) {
+        printf("Invalid file descriptor: %s\n", tr[0]);
+        return;
+    }
+    p = (void *)(uintptr_t)strtoull(tr[1], NULL, 16);
+    if (p == NULL) {
+        printf("Invalid buffer address: %s\n", tr[1]);
+        return;
+    }
+    if (tr[2] != NULL) {
+        cont = (size_t) atoll(tr[2]);
+        if (cont <= 0) {
+            printf("Invalid size: %s is not a valid number.\n", tr[2]);
+            return;
+        }
+    }
+    if ((n = read(fd, p, cont)) == -1) {
+        perror("Cannot read from file descriptor");
+    } else {
+        printf("Read %lld bytes into %p\n", (long long)n, p);
+    }
+}
 
+ssize_t EscribirFichero(char *f, void *p, size_t cont) {
+    int df;
+    ssize_t n;
+    df = open(f, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (df == -1) {
+        return -1;
+    }
+    n = write(df, p, cont);
+    if (n == -1) {
+        close(df);
+        return -1;
+    }
+    close(df);
+    return n; //number of bytes written
+}
+
+void writefile(char *tr[]) {
+    void *p;
+    size_t cont = -1;
+    ssize_t n;
+
+    if (tr[0] == NULL || tr[1] == NULL) {
+        printf("No parameters\n");
+        return;
+    }
+    p = (void *) (uintptr_t) strtoull(tr[1], NULL, 16);
+    if (tr[2] != NULL)
+        cont = (size_t) atoll(tr[2]);
+
+    n = EscribirFichero(tr[0], p, cont);
+    if (n == -1) {
+        perror("Cannot write to file");
+    } else {
+        printf("Written %lld bytes to %s from %p\n", (long long)n, tr[0], p);
+    }
+}
+
+void Write(char *tr[]){
+    void *p;
+    size_t cont = -1;
+    ssize_t n;
+    int fd;
+    if (tr[0] == NULL || tr[1] == NULL || tr[2] == NULL) {
+        printf("Invalid arguments\n");
+        return;
+    }
+    fd = atoi(tr[0]);
+    if (fd <= 0) {
+        printf("Invalid file descriptor: %s\n", tr[0]);
+        return;
+    }
+    p = (void *)(uintptr_t)strtoull(tr[1], NULL, 16);
+    if (p == NULL) {
+        printf("Invalid buffer address: %s\n", tr[1]);
+        return;
+    }
+    if (tr[2] != NULL) {
+        cont = (size_t) atoll(tr[2]);
+        if (cont <= 0) {
+            printf("Invalid size: %s is not a valid number.\n", tr[2]);
+            return;
+        }
+    }
+    if ((n = write(fd, p, cont)) == -1) {
+        perror("Cannot Write from file descriptor");
+    } else {
+        printf("Written %lld bytes from %p in file %d\n", (long long)n, p,fd);
+    }
+}
 
 void print_funcs() {
     printf("Program functions:\t%p\t%p\t%p"
@@ -1031,8 +1167,8 @@ void print_vars(){
     printf("Stat. (N.I.) var:\t%p\t%p\t%p\n", &static_init_var1,&static_init_var2,&static_init_var3);
 
 }
-void Do_pmap (void) /*sin argumentos*/
-{ pid_t pid;       /*hace el pmap (o equivalente) del proceso actual*/
+void Do_pmap (void){
+    pid_t pid;
     char elpid[32];
     char *argv[4]={"pmap",elpid,NULL};
 
@@ -1081,6 +1217,48 @@ void memory (char *tr[]){
         printf("Option %s not contemplated\n", tr[0]);
 
 }
+
+#include <stdio.h>
+#include <stdlib.h>
+
+void auxrecurse(int n) {
+    int array[2048];
+    static int static_array[2048];
+
+    printf("Parameter:(%d)%p\t array: %p\t static arr: %p\n", n, (void *)&n, (void *)&array, (void *)&static_array);
+    if (n <= 0) {
+        return;
+    }
+    auxrecurse(n - 1);
+}
+
+void recurse(char *tr[]) {
+    if (tr[0] == NULL) {
+        printf("No input detected\n");
+        return;
+    }
+    if (strchr(tr[0], '.') != NULL) {
+        printf("Invalid size: floats are not allowed\n");
+        return;
+    }
+    char *endptr;
+    long size = strtol(tr[0], &endptr, 10);
+    if (*endptr != '\0' || endptr == tr[1]) {
+        printf("Invalid size: '%s' is not a number.\n", tr[0]);
+        return;
+    }
+    if (size <= 0) {
+        printf("Invalid size: must be a positive number.\n");
+        return;
+    }
+    if (size > INT_MAX) {
+        printf("Invalid size: number is too large.\n");
+        return;
+    }
+    int n = atoi(tr[0]);
+    auxrecurse(n);
+}
+
 
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
