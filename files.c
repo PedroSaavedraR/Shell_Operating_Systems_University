@@ -236,22 +236,19 @@ mPos findmemsh(int key,tmemlist *m){
     return p;
 }
 
-void closemem(mPos p,tmemlist* m){
+void closemem(mPos p, tmemlist *m) {
     mPos q;
 
-    if(p==*m) //delete the first
+    if (p == *m) {  // Deleting the first node
         *m = (*m)->next;
-    else if (p->next == NULL) { // Deleting the last element
-        for (q = *m; q->next != p; q = q->next);
-        q->next = NULL;
-    } else { //deleting from the middle
-        q=p->next;
-        p->data = q->data;
-        p->next = q->next;
-        p=q; //get rid of the duplicated node
-
+        free(p);
+    } else {
+        for (q = *m; q != NULL && q->next != p; q = q->next);
+        if (q != NULL) {
+            q->next = p->next;
+            free(p);
+        }
     }
-    free(p);
 }
 
 void FreeMemList(tmemlist m){
