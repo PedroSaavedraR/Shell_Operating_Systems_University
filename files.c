@@ -136,7 +136,7 @@ void printmemory(tmemlist m, char *method) {
             }
 
             // Print additional fields if present
-            if (p->data.kdf != -1) {
+            if (p->data.kdf != -1 && strcmp(p->data.method, "shared")) {
                 printf("  %d\n", p->data.kdf);
             }
             if (*p->data.filename != '\0') {
@@ -152,7 +152,7 @@ void printmemory(tmemlist m, char *method) {
                 } else {
                     printf("%p %4ld %s %s\n", p->data.adress, p->data.size, p->data.date, p->data.method);
                 }
-                if (p->data.kdf != -1) {
+                if (p->data.kdf != -1 && strcmp(p->data.method, "shared")) {
                     // Print the KDF value if it's not -1
                     printf("  %d\n", p->data.kdf);
                 }
@@ -259,7 +259,7 @@ void FreeMemList(tmemlist m){
     p = m;
     while(m!=NULL){
         q = p;
-        free(q);
         p=p->next;
+        closemem(q,&m);
     }
 }
