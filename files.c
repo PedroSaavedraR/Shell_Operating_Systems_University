@@ -125,42 +125,44 @@ bool isemptymem (tmemlist m){
 
 void printmemory(tmemlist m, char *method) {
     mPos p;
+    printf("******Assigned blocks list for the process %d\n", getpid());
     if (strcmp(method, "all") == 0) {
-        printf("******Assigned blocks list for the process %d\n", getpid());
         for (p = m; p != NULL; p = p->next) {
             if (strcmp(p->data.method, "shared") == 0) {
                 // Special formatting for 'shared' method
-                printf("%p %4ld %s %s (key %d)\n", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf);
+                printf("%p %4ld %s %s (key %d) ", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf);
             } else {
-                printf("%p %4ld %s %s\n", p->data.adress, p->data.size, p->data.date, p->data.method);
+                printf("%p %4ld %s %s ", p->data.adress, p->data.size, p->data.date, p->data.method);
             }
 
             // Print additional fields if present
             if (p->data.kdf != -1 && strcmp(p->data.method, "shared")) {
-                printf("  %d\n", p->data.kdf);
+                printf("  %d", p->data.kdf);
             }
             if (*p->data.filename != '\0') {
-                printf("%s\n", p->data.filename);
+                printf("%s", p->data.filename);
             }
+            printf("\n");
         }
     } else {
         for (p = m; p != NULL; p = p->next) {
             if (strcmp(p->data.method, method) == 0) {
                 // Print the memory block for the selected method
                 if (strcmp(p->data.method, "shared") == 0) {
-                    printf("%p %4ld %s %s (key %d)\n", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf);
+                    printf("%p %4ld %s %s (key %d) ", p->data.adress, p->data.size, p->data.date, p->data.method, p->data.kdf);
                 } else {
-                    printf("%p %4ld %s %s\n", p->data.adress, p->data.size, p->data.date, p->data.method);
+                    printf("%p %4ld %s %s ", p->data.adress, p->data.size, p->data.date, p->data.method);
                 }
                 if (p->data.kdf != -1 && strcmp(p->data.method, "shared")) {
                     // Print the KDF value if it's not -1
-                    printf("  %d\n", p->data.kdf);
+                    printf("%d  ", p->data.kdf);
                 }
                 if (*p->data.filename != '\0') {
                     // Print filename if it's not empty
-                    printf("%s\n", p->data.filename);
+                    printf("%s ", p->data.filename);
                 }
             }
+            printf("\n");
         }
     }
 }
