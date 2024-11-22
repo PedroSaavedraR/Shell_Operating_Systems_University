@@ -236,6 +236,13 @@ mPos findmemsh(int key,tmemlist *m){
     return p;
 }
 
+mPos findmemfl(char *filename,tmemlist *m){
+    mPos p = *m;
+    while(p != NULL && strcmp(p->data.filename,filename))
+        p = p->next;
+    return p;
+}
+
 void closemem(mPos p, tmemlist *m) {
     mPos q;
 
