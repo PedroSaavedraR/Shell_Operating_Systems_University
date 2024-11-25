@@ -689,6 +689,7 @@ void * ObtenerMemoriaShmget (key_t clave, size_t tam)
     void * p;
     int aux,id,flags=0777;
     struct shmid_ds s;
+    char *Date = strdate();
     //char* Date = strdate();
     if (tam)     /*tam distito de 0 indica crear */
         flags=flags | IPC_CREAT | IPC_EXCL; /*cuando no es crear pasamos de tamano 0*/
@@ -704,7 +705,10 @@ void * ObtenerMemoriaShmget (key_t clave, size_t tam)
         return (NULL);
     }
     shmctl (id,IPC_STAT,&s); /* si no es crear, necesitamos el tamano, que es s.shm_segsz*/
-    //addmem(p, s.shm_segsz,Date,"shared","",clave,&memlist);
+    if (!addmem(p, s.shm_segsz,Date,"shared","",clave,&memlist)) {
+        printf("Error: Unable to record memory allocation.\n");
+    }
+
     return (p);
 }
 
@@ -788,9 +792,6 @@ void do_AllocateCreateshared(char *tr[]) {
 
     if (p != NULL) {
         printf("Allocated %zu bytes at address %p with key %u\n", tam, p,cl);
-        if (!addmem(p, tam, date, "shared", "", cl, &memlist)) {
-            printf("Error: Unable to record memory allocation.\n");
-        }
     } else {
         printf("Cannot assign shared memory key %d: %s\n", cl, strerror(errno));
     }
@@ -866,7 +867,7 @@ void allocate(char *tr[]) {
         printf("Invalid size: must be a positive number.\n");
         return;
     }
-    if (size > INT_MAX) {
+    if (size > SIZE_MAX) {
         printf("Invalid size: number is too large.\n");
         return;
     }
@@ -1244,20 +1245,22 @@ void recurse(char *tr[]) {
     char *endptr;
     long size = strtol(tr[0], &endptr, 10);
     if (*endptr != '\0' || endptr == tr[1]) {
-        printf("Invalid size: '%s' is not a number.\n", tr[0]);
+        printf("Invalid size: '%s' is not a number.\n", tr[0]);c
         return;
     }
     if (size <= 0) {
         printf("Invalid size: must be a positive number.\n");
         return;
     }
-    if (size > INT_MAX) {
+    if (size > SIZE_MAX) {
         printf("Invalid size: number is too large.\n");
         return;
     }
     int n = atoi(tr[0]);
     auxrecurse(n);
 }
+
+//---------------------------------------------------------------- P3 ---------------------------------------------------
 
 
 //----------------------------------------------------------------------------------------------------------------
