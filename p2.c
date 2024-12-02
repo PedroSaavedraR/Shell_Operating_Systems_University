@@ -76,8 +76,12 @@ void Read (char*[]);
 void writefile(char*[]);
 void Write(char*[]);
 void recurse (char*[]);
+void Getuid (char *[]);
+void Setuid (char *[]);
+void showvar (char *[]);
 
-tItem commands[34] =  {
+
+tItem commands[37] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
@@ -122,6 +126,11 @@ tItem commands[34] =  {
                              "automatic array of size 2048. a static array of size 2048 and prints the\n"
                              " addresses of both arrays and its parameter (as well as the number o \n"
                              "recursion) before calling itself"},
+        {"getuid", Getuid, "views the process's credentials (real and effective)"},
+        {"setuid", Setuid, "set the process efective credential (-l for login)"},
+        {"showvar", showvar, "shows the value and address of environment variables v1 v2 ....\n"
+                             " access must be by main() third argument, environ and library function \n"
+                             "getenv"},
         {NULL, NULL, "\0"},
 };
 
@@ -787,7 +796,6 @@ void do_AllocateCreateshared(char *tr[]) {
         tam = (size_t)strtoul(tr[2], NULL, 10);
 
     void *p;
-    char* date = strdate();
     p = ObtenerMemoriaShmget(cl, tam);
 
     if (p != NULL) {
@@ -1245,7 +1253,7 @@ void recurse(char *tr[]) {
     char *endptr;
     long size = strtol(tr[0], &endptr, 10);
     if (*endptr != '\0' || endptr == tr[1]) {
-        printf("Invalid size: '%s' is not a number.\n", tr[0]);c
+        printf("Invalid size: '%s' is not a number.\n", tr[0]);
         return;
     }
     if (size <= 0) {
@@ -1261,6 +1269,39 @@ void recurse(char *tr[]) {
 }
 
 //---------------------------------------------------------------- P3 ---------------------------------------------------
+
+void Getuid (char *tr[]){
+    uid_t ruid = getuid();
+    uid_t euid = geteuid();
+
+    printf("Real User ID: %u\n", ruid);
+    printf("Effective User ID: %u\n", euid);
+}
+
+void Setuid (char *tr[]){
+    if (strcmp(tr[1], "-l") == 0) {
+        Getuid(NULL);
+    }
+    uid_t euid = atoi(tr[1]);
+    if (setuid(euid) == -1) {
+        perror("setuid failed");
+        return;
+        }
+    printf("Effective UID changed successfully.\n");
+    Getuid(NULL);
+}
+
+void showvar (char *tr[]){
+
+}
+
+
+
+
+
+
+
+
 
 
 //----------------------------------------------------------------------------------------------------------------
