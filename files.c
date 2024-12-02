@@ -269,3 +269,51 @@ void FreeMemList(tmemlist m){
         closemem(q,&m);
     }
 }
+
+//-----------------------------------------process list----------------------------
+
+void createproclist(tproclist *plist){
+   *plist = NULL;
+}
+
+bool isemptyproc(tproclist plist){
+    return plist == NULL;
+}
+bool addproc(tprocess data,tproclist *plist){
+    pPos q, p;
+
+    q->data = data;
+    q->next = NULL;
+
+    if (plist == NULL) {
+        *plist = q;
+        return true;
+    }
+    p = *plist;
+    while (p->next != NULL) {
+        p = p->next;
+    }
+
+    p->next = q;
+
+    return true;
+}
+
+pPos findproc(int pid, tproclist *plist){
+    pPos p = *plist;
+    while(p != NULL && p->data.PID != pid)
+        p = p->next;
+    return p;
+}
+
+void freeproclist(tproclist plist){
+    pPos q;
+    if(plist == NULL)
+        return;
+    while(plist->next != NULL){
+        q = plist;
+        free(q);
+        plist = plist->next;
+    }
+    free(plist);
+}
