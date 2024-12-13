@@ -3,6 +3,7 @@ José Martínez Estévez     jose.martinez.estevez@udc.es
 Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 */
 #define MAX 2048
+#define MAXVAR 512
 #include <stdbool.h>
 #include <time.h>
 #include <stdio.h>
@@ -33,6 +34,8 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 HLIST L;
 tfilelist files;
 tmemlist memlist;
+tproclist proclist;
+tdirlist dirlist;
 
 typedef int key_t;
 typedef struct Item{
@@ -79,9 +82,13 @@ void recurse (char*[]);
 void Getuid (char *[]);
 void Setuid (char *[]);
 void showvar (char *[]);
+void cmd_fork (char *[]);
+void showvar (char *[]);
+void changevar (char *[]);
+void search(char *[]);
 
 
-tItem commands[37] =  {
+tItem commands[41] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
@@ -131,6 +138,23 @@ tItem commands[37] =  {
         {"showvar", showvar, "shows the value and address of environment variables v1 v2 ....\n"
                              " access must be by main() third argument, environ and library function \n"
                              "getenv"},
+        {"showvar", showvar, "shows the value and address of environment variables v1 v2 ....\n"
+                             " access must be by main() third argument, environ and library function \n"
+                             "getenv"},
+        {"fork", cmd_fork, "the shell does the fork system call and waits for its child to end"},
+        {"changevar", changevar, "changes the value of an environment variable. A new variable might be \n"
+                                 "created ONLY when accesing with putenv (-p)"},
+        {"search", search, "search\n"
+                           "-add dir\n"
+                           "-del dir\n"
+                           "-clear\n"
+                           "-path\n"
+                           "shows or modifies the search list (the list of directories where the shell\n"
+                           "looks for executables)\n"
+                           "adds a dirrectory to the search list\n"
+                           "deletes a directory from the search list\n"
+                           "clears the search list\n"
+                           "imports de directories in the PATH to the seach list"},
         {NULL, NULL, "\0"},
 };
 
@@ -228,6 +252,8 @@ void Quit(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
     FreeMemList(memlist);
+    freeproclist(proclist);
+    freedirlist(dirlist);
     exit(0);
 }
 
@@ -235,12 +261,16 @@ void Exit(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
     FreeMemList(memlist);
+    freeproclist(proclist);
+    freedirlist(dirlist);
     exit(0);
 }
 void Bye(char *pcs[]){
     FreeFileList(files);
     FreeHistoricList(&L);
     FreeMemList(memlist);
+    freeproclist(proclist);
+    freedirlist(dirlist);
     exit(0);
 }
 
@@ -1269,6 +1299,40 @@ void recurse(char *tr[]) {
 }
 
 //---------------------------------------------------------------- P3 ---------------------------------------------------
+int BuscarVariable (char * var, char *e[])  /*busca una variable en el entorno que se le pasa como parÃ¡metro*/
+{                                           /*devuelve la posicion de la variable en el entorno, -1 si no existe*/
+    int pos=0;
+    char aux[MAXVAR];
+
+    strcpy (aux,var);
+    strcat (aux,"=");
+
+    while (e[pos]!=NULL)
+        if (!strncmp(e[pos],aux,strlen(aux)))
+            return (pos);
+        else
+            pos++;
+    errno=ENOENT;   /*no hay tal variable*/
+    return(-1);
+}
+
+
+int CambiarVariable(char * var, char * valor, char *e[]) /*cambia una variable en el entorno que se le pasa como parÃ¡metro*/
+{                                                        /*lo hace directamente, no usa putenv*/
+    int pos;
+    char *aux;
+
+    if ((pos=BuscarVariable(var,e))==-1)
+        return(-1);
+
+    if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
+        return -1;
+    strcpy(aux,var);
+    strcat(aux,"=");
+    strcat(aux,valor);
+    e[pos]=aux;
+    return (pos);
+}
 
 void Getuid (char *tr[]){
     uid_t ruid = getuid();
@@ -1291,11 +1355,99 @@ void Setuid (char *tr[]){
     Getuid(NULL);
 }
 
-void showvar (char *tr[]){
+extern char **environ;
+void showvar(char *tr[]) {
+    for (int i = 0; tr[i] != NULL; i++) {
+        const char *var_name = tr[i];
+        char **env;
+
+        for (env = environ; *env != NULL; env++) {
+            if (strncmp(*env, var_name, strlen(var_name)) == 0 && (*env)[strlen(var_name)] == '=') {
+                printf("With arg3 main %s(%p) @%p\n", *env, (void*)*env, (void*)env);
+                break;
+            }
+        }
+        if (*env == NULL) {
+            printf("With arg3 main %s not found\n", var_name);
+        }
+
+        // Using environ
+        for (env = environ; *env != NULL; env++) {
+            if (strncmp(*env, var_name, strlen(var_name)) == 0 && (*env)[strlen(var_name)] == '=') {
+                printf("\nWith environ %s(%p) @%p\n", *env, (void*)*env, (void*)env);
+                break;
+            }
+        }
+        if (*env == NULL) {
+            printf("\nWith environ %s not found\n", var_name);
+        }
+
+        // Using getenv()
+        char *value = getenv(var_name);
+        if (value != NULL) {
+            printf("\nWith getenv %s=%s(%p)\n", var_name, value, (void*)value);
+        } else {
+            printf("\nWith getenv %s not found\n", var_name);
+        }
+
+        printf("\n");
+    }
+}
+
+void changevar(char *tr[]){
 
 }
 
 
+void cmd_fork (char *tr[]){
+    pid_t pid;
+
+    if ((pid=fork())==0){
+        freeproclist(proclist); //VaciarListaProcesos(&LP); Depende de la implementación de cada uno*/
+        printf ("ejecutando proceso %d\n", getpid());
+    }
+    else if (pid!=-1)
+        waitpid (pid,NULL,0);
+}
+
+void search (char *tr[]){
+    if(tr[0] == NULL) {
+        printdir(dirlist);
+        return;
+    }
+    if (strcmp(tr[0], "-add") == 0) {
+        tdirectory d;
+        if(tr[1] != NULL) {
+            strcpy(d.dirname, tr[1]);
+            adddir(d,&dirlist);
+        }
+        else
+            printf("error, bad address");
+        }
+    else if (strcmp (tr[0], "-del") == 0) {
+        if(tr[1] != NULL){
+            dPos d;
+            d = finddir(tr[1],&dirlist);
+            if(removedir(d,&dirlist))
+                printf("removed %s",tr[1]);
+            else printf("could not removve %s",tr[1]);
+        }
+        else printf("error,bad addres");
+
+    } else if (strcmp(tr[0], "-clear") == 0) {
+            freedirlist(dirlist);
+    }
+    else if(strcmp(tr[0],"-path") == 0){
+        tdirectory d;
+        if(tr[1] != NULL) {
+            strcpy(d.dirname, tr[1]);
+            adddir(d,&dirlist);
+        }
+        else
+            printf("error, bad address");
+    }
+    else printf("error, invalid argument");
+}
 
 
 
@@ -1310,6 +1462,8 @@ int main(int argc, char *argv[]) {
     char *pcs[MAX / 2];
     createfilelist(&files);
     creatememlist(&memlist);
+    createproclist(&proclist);
+    createdirlist(&dirlist);
     if (!initfilelist(&files)) {
         printf("Error, could not initialize filelist");
         return 1;
