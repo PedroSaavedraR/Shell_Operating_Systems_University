@@ -32,11 +32,15 @@ typedef struct process{
     int priority;
 }tprocess;
 
+typedef struct directory{
+    char dirname[MAX];
+}tdirectory;
 
 
 typedef struct tNode* tPos;
 typedef struct mNode* mPos;
 typedef struct pNode* pPos;
+typedef struct dNode* dPos;
 
 struct tNode{
     tfile data;
@@ -53,9 +57,15 @@ struct pNode{
     pPos next;
 };
 
+struct dNode{
+    tdirectory data;
+    dPos next;
+
+};
 typedef tPos tfilelist;
 typedef mPos tmemlist;
 typedef pPos tproclist;
+typedef dPos tdirlist;
 
 bool initfilelist(tfilelist* list);
 bool isemptyfiles(tfilelist);
@@ -89,5 +99,13 @@ bool isemptyproc(tproclist);
 bool addproc(tprocess,tproclist*);
 pPos findproc(int pid, tproclist*);
 void freeproclist(tproclist);
+
+void createdirlist(tdirlist*);
+bool isemptydir(tdirlist);
+bool adddir(tdirectory,tdirlist *);
+dPos finddir(char* dir,tdirlist*);
+bool removedir(dPos,tdirlist*);
+void printdir(tdirlist);
+void freedirlist(tdirlist);
 
 #endif //S0_P0_FILES_H
