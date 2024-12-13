@@ -317,3 +317,89 @@ void freeproclist(tproclist plist){
     }
     free(plist);
 }
+
+//-------------------Search list-------------
+
+void createdirlist(tdirlist *dlist){
+    *dlist = NULL;
+}
+
+bool isemptydir(tdirlist dlist){
+    return dlist == NULL;
+}
+
+#include <stdlib.h>  // For malloc
+
+bool adddir(tdirectory data, tdirlist *dlist) {
+    // Allocate memory for q
+    dPos q = (dPos)malloc(sizeof(*q));  // Allocate memory for the new node
+
+    if (q == NULL) {  // Check if memory allocation failed
+        return false;
+    }
+
+    q->data = data;
+    q->next = NULL;
+
+    if (*dlist == NULL) {
+        *dlist = q;
+        return true;
+    }
+
+    dPos p = *dlist;
+    while (p->next != NULL) {
+        p = p->next;
+    }
+
+    p->next = q;
+    return true;
+}
+
+
+dPos finddir(char* dir,tdirlist *dlist) {
+        dPos p = *dlist;
+        while (p != NULL && strcmp(p->data.dirname, dir))
+            p = p->next;
+        return p;
+
+}
+
+
+void printdir(tdirlist dlist){
+    dPos p;
+    if(!isemptydir(dlist)){
+        for (p = dlist; p != NULL; p = p->next) {
+            printf("%s", p->data.dirname);
+        }
+    }
+}
+
+bool removedir(dPos p,tdirlist *dlist) {
+    dPos q;
+
+    if (p == *dlist) {  // Deleting the first node
+        *dlist = (*dlist)->next;
+        free(p);
+        return true;
+    } else {
+        for (q = *dlist; q != NULL && q->next != p; q = q->next);
+        if (q != NULL) {
+            q->next = p->next;
+            free(p);
+            return true;
+        }
+    }
+    return false;
+}
+
+void freedirlist(tdirlist dlist){
+    dPos q;
+    if(dlist == NULL)
+        return;
+    while(dlist->next != NULL){
+        q = dlist;
+        free(q);
+        dlist = dlist->next;
+    }
+    free(dlist);
+}
