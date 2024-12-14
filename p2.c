@@ -19,8 +19,6 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <pwd.h>
@@ -29,6 +27,7 @@ Pedro Saavedra Rubinos    pedro.saavedra.rubinos@udc.esb
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
 
 
 HLIST L;
@@ -85,10 +84,19 @@ void showvar (char *[]);
 void cmd_fork (char *[]);
 void showvar (char *[]);
 void changevar (char *[]);
+void subsvar (char *[]);
+void exec (char *tr[]);
 void search(char *[]);
+void cmd_environ (char *[]);
+void fg (char *[]);
+void fgpri (char *[]);
+void back(char *[]);
+void backpri(char *[]);
+void listjobs(char *[]);
+void deljob(char *[]);
 
 
-tItem commands[41] =  {
+tItem commands[49] =  {
         {"authors",authors,"Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names"},
         {"pid", pid, "Prints the pid of the process executing the shell."},
         {"ppid",ppid,"Prints the pid of the shell’s parent process."},
@@ -138,12 +146,11 @@ tItem commands[41] =  {
         {"showvar", showvar, "shows the value and address of environment variables v1 v2 ....\n"
                              " access must be by main() third argument, environ and library function \n"
                              "getenv"},
-        {"showvar", showvar, "shows the value and address of environment variables v1 v2 ....\n"
-                             " access must be by main() third argument, environ and library function \n"
-                             "getenv"},
         {"fork", cmd_fork, "the shell does the fork system call and waits for its child to end"},
         {"changevar", changevar, "changes the value of an environment variable. A new variable might be \n"
                                  "created ONLY when accesing with putenv (-p)"},
+        {"subsvar", subsvar, "changes one environmet (v1) variable for other (v2 with value val) "},
+        {"exec", exec, " executes, without creating a new process, the program described by progspec"},
         {"search", search, "search\n"
                            "-add dir\n"
                            "-del dir\n"
@@ -155,6 +162,15 @@ tItem commands[41] =  {
                            "deletes a directory from the search list\n"
                            "clears the search list\n"
                            "imports de directories in the PATH to the seach list"},
+        {"environ", cmd_environ, "shows the process environment"},
+        {"fg", fg, "creates a process tha executes in the foreground the program described \n"
+                   "by progspec"},
+        {"fgpri", fgpri, "creates a process that executes in the foreground, with its priority \n"
+                         "changed to prio, the program described by progspec "},
+        {"back",back,"back progspec : executes a process in the background"},
+        {"backpri",backpri,"backpri pri progspec : executes a process in the background with priority pri"},
+        {"listjobs",listjobs,"lists all processes currently running in the background"},
+        {"deljob",deljob,"deljob -term/-sig deletes a background process for the list"},
         {NULL, NULL, "\0"},
 };
 
@@ -178,7 +194,7 @@ void DoCommand(char *pcs[]){
             return;
         }
     }
-    printf("Command %s not found\n", pcs[0]);
+    fg(pcs[1]);
 }
 
 
@@ -241,7 +257,7 @@ void historic(char **c) {
 }
 
 void pid(char *tr[]) {
-    printf("%d", getpid());
+    printf("%d\n", getpid());
 }
 
 void ppid(char *tr[]){
@@ -1299,6 +1315,29 @@ void recurse(char *tr[]) {
 }
 
 //---------------------------------------------------------------- P3 ---------------------------------------------------
+
+bool isInteger(const char *str) {
+    if (str == NULL || *str == '\0') {
+        return false;
+    }
+    if (*str == '+' || *str == '-') {
+        str++;
+    }
+    if (*str == '\0') {
+        return false;
+    }
+
+    while (*str) {
+        if (!isdigit(*str)) {
+            return false;
+        }
+        str++;
+    }
+
+    return true;
+}
+
+
 int BuscarVariable (char * var, char *e[])  /*busca una variable en el entorno que se le pasa como parÃ¡metro*/
 {                                           /*devuelve la posicion de la variable en el entorno, -1 si no existe*/
     int pos=0;
@@ -1338,8 +1377,8 @@ void Getuid (char *tr[]){
     uid_t ruid = getuid();
     uid_t euid = geteuid();
 
-    printf("Real User ID: %u\n", ruid);
-    printf("Effective User ID: %u\n", euid);
+    printf("Real User ID: %d\n", ruid);
+    printf("Effective User ID: %d\n", euid);
 }
 
 void Setuid (char *tr[]){
@@ -1357,6 +1396,13 @@ void Setuid (char *tr[]){
 
 extern char **environ;
 void showvar(char *tr[]) {
+    if (tr[0] == NULL) {
+        char **env = environ;
+        while (*env) {
+            printf("%s\n", *env);
+            env++;
+        }
+    }
     for (int i = 0; tr[i] != NULL; i++) {
         const char *var_name = tr[i];
         char **env;
@@ -1394,15 +1440,329 @@ void showvar(char *tr[]) {
     }
 }
 
-void changevar(char *tr[]){
+void changevar(char *tr[]) {
+    if (tr[0] == NULL || tr[1] == NULL || tr[2] == NULL) {
+        fprintf(stderr, "changevar: Insufficient arguments\n");
+        fprintf(stderr, "Usage: changevar [-a|-e|-p] var val\n");
+        return;
+    }
 
+    char *option = tr[0];
+    char *var = tr[1];
+    char *value = tr[2];
+
+    if (strcmp(option, "-a") == 0 || strcmp(option, "-e") == 0) {
+        int pos = CambiarVariable(var, value, environ);
+        if (pos == -1) {
+            if (errno == ENOENT && strcmp(option, "-a") == 0) {
+                if (setenv(var, value, 0) != 0) {
+                    perror("setenv failed");
+                    return;
+                }
+                printf("Environment variable added: %s=%s\n", var, value);
+            } else {
+                perror("CambiarVariable failed");
+            }
+        } else {
+            printf("Environment variable %s: %s=%s\n",
+                   (strcmp(option, "-a") == 0) ? "added" : "modified", var, value);
+        }
+    } else if (strcmp(option, "-p") == 0) {
+        char *env_string = malloc(strlen(var) + strlen(value) + 2);
+        if (env_string == NULL) {
+            perror("malloc failed");
+            return;
+        }
+        sprintf(env_string, "%s=%s", var, value);
+        if (putenv(env_string) != 0) {
+            perror("putenv failed");
+            free(env_string);
+            return;
+        }
+        printf("Environment variable set using putenv: %s=%s\n", var, value);
+    } else {
+        fprintf(stderr, "Invalid option: %s\n", option);
+        fprintf(stderr, "Usage: changevar [-a|-e|-p] var val\n");
+    }
 }
 
+void cmd_environ (char *tr[]) {
+    char **env = environ;
+    if (tr[0] == NULL) {
+        while (*env) {
+            printf("%s\n", *env);
+            env++;
+        }
+    }
+    else if (!strcmp(tr[0], "-addr")){
+        printf("environ:   %p (stored in %p)\n", environ, (void *)&environ);
+        //printf("main arg3: %p (stored in %p)\n", ;
+
+    }
+    else if (!strcmp(tr[0], "-environ")) {
+        int index = 0;
+        while (*env) {
+            printf("%p->environ[%d]=(%p) %s\n", (void *) &environ[index], index, (void *) *env, *env);
+            env++;
+            index++;
+        }
+    }
+    else
+        printf("Use: environ [-environ|-addr]\n");
+}
+
+
+void subsvar(char *tr[]) {
+    if (tr[0] == NULL || tr[1] == NULL || tr[2] == NULL || tr[3] == NULL) {
+        printf("Usage: subsvar [-a|-e] v1 v2 val\n");
+        return;
+    }
+    char *option = tr[0];
+    char *v1 = tr[1];
+    char *v2 = tr[2];
+    char *val = tr[3];
+    if (strcmp(option, "-a") != 0 && strcmp(option, "-e") != 0) {
+        printf("Invalid option. Use -a or -e.\n");
+        return;
+    }
+    char *old_value = getenv(v1);
+    if (strcmp(option, "-a") == 0 || (strcmp(option, "-e") == 0 && old_value != NULL)) {
+        if (unsetenv(v1) != 0) {
+            perror("Error unsetting variable");
+            return;
+        }
+        if (setenv(v2, val, 1) != 0) {
+            perror("Error setting new variable");
+            return;
+        }
+        printf("Substituted %s%s%s with %s=%s\n",v1,old_value ? "=" : "",old_value ? old_value : "",v2,val);
+    } else {
+        printf("Environment variable %s not found.\n", v1);
+    }
+}
+
+char * Ejecutable (char *s)
+{
+    static char path[PATH_MAX];
+    struct stat st;
+    dPos p;
+
+    if (s==NULL || (p=SearchListFirst(dirlist))==NULL)
+        return s;
+    if (s[0]=='/' || !strncmp (s,"./",2) || !strncmp (s,"../",3))
+        return s;        /*is an absolute pathname*/
+
+    strncpy (path, p->data.dirname, PATH_MAX-1);strncat (path,"/",PATH_MAX-1); strncat(path,s,PATH_MAX-1);
+    if (lstat(path,&st)!=-1)
+        return path;
+    while ((p=SearchListNext(p))!=NULL){
+        strncpy (path, p->data.dirname, PATH_MAX-1);strncat (path,"/",PATH_MAX-1); strncat(path,s,PATH_MAX-1);
+        if (lstat(path,&st)!=-1)
+            return path;
+    }
+    return s;
+}
+
+int Execpve(char *tr[], char **NewEnv, int * pprio)
+{
+    char *p;               /*NewEnv contains the address of the new environment*/
+    /*pprio the address of the new priority*/
+    /*NULL indicates no change in environment and/or priority*/
+    if (tr[0]==NULL || (p=Ejecutable(tr[0]))==NULL){
+        errno=EFAULT;
+        return-1;
+    }
+    if (pprio !=NULL  && setpriority(PRIO_PROCESS,getpid(),*pprio)==-1 && errno){
+        printf ("Imposible cambiar prioridad: %s\n",strerror(errno));
+        return -1;
+    }
+
+    if (NewEnv==NULL)
+        return execv(p,tr);
+    else
+        return execve (p, tr, NewEnv);
+}
+
+void exec(char *tr[]) {
+    if (tr == NULL || tr[0]==NULL) {
+        fprintf(stderr, "exec: No command provided\n");
+        return;
+    }
+    if (Execpve(tr, NULL, NULL) == -1) {
+        fprintf(stderr, "exec: Failed to execute '%s': %s\n", tr[0], strerror(errno));
+    }
+}
+
+
+void execpri(char *tr[]) {
+    if (tr[0] == NULL || !isInteger(tr[0])) {
+        fprintf(stderr, "execpri: Not valid priority\n");
+        return;
+    }
+    if (tr[1] == NULL || tr[2] == NULL) {
+        fprintf(stderr, "exec: Invalid arguments\n");
+        return;
+    }
+    int *i = NULL;
+    *i = atoi(tr[1]);
+    if (Execpve(&tr[2], NULL, i) == -1) {
+        fprintf(stderr, "Failed to execute '%s': %s\n", tr[0], strerror(errno));
+    }
+}
+
+void fg(char *tr[]) {
+    pid_t pid;
+    int status;
+
+    if (tr[0] == NULL) {
+        fprintf(stderr, "fg: No command provided\n");
+        return;
+    }
+
+    pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        return;
+    } else if (pid == 0) {
+        exec(tr);
+        fprintf(stderr, "fg: Failed to execute '%s'\n", tr[0]);
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Foreground process %d created\n", pid);
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid");
+            return;
+        }
+        if (WIFEXITED(status)) {
+            printf("Foreground process %d exited with status %d\n", pid, WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("Foreground process %d killed by signal %d\n", pid, WTERMSIG(status));
+        }
+    }
+}
+
+void fgpri(char *tr[]) {
+    if (tr[0] == NULL || !isInteger(tr[0])) {
+        fprintf(stderr, "fgpri: Not valid priority\n");
+        return;
+    }
+
+    int prio = atoi(tr[0]);
+
+    char **commandArgs = &tr[1];
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        return;
+    } else if (pid == 0) {
+        if (setpriority(PRIO_PROCESS, getpid(), prio) == -1) {
+            perror("setpriority");
+            exit(EXIT_FAILURE);
+        }
+
+        exec(commandArgs);
+
+        fprintf(stderr, "fgpri: Failed to execute '%s'\n", commandArgs[0]);
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Foreground process %d created with priority %d\n", pid, prio);
+        int status;
+
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid");
+            return;
+        }
+        if (WIFEXITED(status)) {
+            printf("Foreground process %d exited with status %d\n", pid, WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("Foreground process %d killed by signal %d\n", pid, WTERMSIG(status));
+        }
+    }
+}
+
+char* aux_jointr(char *pz[]) {
+    char *result = (char *)malloc(MAX);
+    if (result == NULL) {
+        perror("malloc");
+        return "error";
+    }
+    result[0] = '\0';
+    for (int i = 0; pz[i] != NULL; i++) {
+        if (strlen(result) + strlen(pz[i]) + 1 >= MAX) { // Check for buffer overflow
+            fprintf(stderr, "Error: Result string exceeds buffer size\n");
+            return "error";
+        }
+        strcat(result, pz[i]); // Append the string
+        strcat(result," ");
+    }
+    return result;
+}
+
+void back(char *tr[]){
+        pid_t pid;
+
+        if (tr[0] == NULL) {
+            fprintf(stderr, "back: no command provided\n");
+            return;
+        }
+
+        pid = fork();
+
+        if (pid == -1) {
+            perror("fork");
+            return;
+        } else if (pid == 0) {
+            exec(tr);
+            exit(EXIT_FAILURE);
+        } else {
+            addproc(pid,strdate(), aux_jointr(tr),&proclist);
+            printf("Background process %d started\n", pid);
+        }
+}
+
+void backpri(char *tr[]){
+    if (tr[0] == NULL || !isInteger(tr[0])) {
+        fprintf(stderr, "Backpri: Not valid priority\n");
+        return;
+    }
+
+    int prio = atoi(tr[0]);
+
+        if(tr[1] == NULL){
+            fprintf(stderr,"backpri : Invalid arguments");
+            return;
+        }
+    char **commandArgs = &tr[1];
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        return;
+    } else if (pid == 0) {
+        if (setpriority(PRIO_PROCESS, getpid(), prio) == -1) {
+            perror("setpriority");
+            exit(EXIT_FAILURE);
+        }
+
+        exec(commandArgs);
+        fprintf(stderr, "fgpri: Failed to execute '%s'\n", commandArgs[0]);
+        exit(EXIT_FAILURE);
+    } else {
+        addproc(pid, strdate(), aux_jointr(tr), &proclist);
+        printf("Background process %d created with priority %d\n", pid, prio);
+    }
+
+}
 
 void cmd_fork (char *tr[]){
     pid_t pid;
 
     if ((pid=fork())==0){
+
         freeproclist(proclist); //VaciarListaProcesos(&LP); Depende de la implementación de cada uno*/
         printf ("ejecutando proceso %d\n", getpid());
     }
@@ -1410,51 +1770,89 @@ void cmd_fork (char *tr[]){
         waitpid (pid,NULL,0);
 }
 
-void search (char *tr[]){
-    if(tr[0] == NULL) {
+void search(char *tr[]) {
+    if (tr[0] == NULL) {
         printdir(dirlist);
         return;
     }
+
     if (strcmp(tr[0], "-add") == 0) {
         tdirectory d;
-        if(tr[1] != NULL) {
-            strcpy(d.dirname, tr[1]);
-            adddir(d,&dirlist);
+        if (tr[1] != NULL) {
+            strncpy(d.dirname, tr[1], sizeof(d.dirname) - 1);
+            d.dirname[sizeof(d.dirname) - 1] = '\0';
+            if (adddir(d, &dirlist)) {
+                printf("Added directory: %s\n", tr[1]);
+            } else {
+                printf("Error: Could not add directory: %s\n", tr[1]);
+            }
+        } else {
+            printf("Error: Missing directory address\n");
         }
-        else
-            printf("error, bad address");
+    }
+    else if (strcmp(tr[0], "-del") == 0) {
+        if (tr[1] != NULL) {
+            dPos d = finddir(tr[1], &dirlist);
+            if (d != NULL) {
+                if (removedir(d, &dirlist)) {
+                    printf("Removed directory: %s\n", tr[1]);
+                } else {
+                    printf("Error: Could not remove directory: %s\n", tr[1]);
+                }
+            } else {
+                printf("Error: Directory not found: %s\n", tr[1]);
+            }
+        } else {
+            printf("Error: Missing directory address\n");
         }
-    else if (strcmp (tr[0], "-del") == 0) {
-        if(tr[1] != NULL){
-            dPos d;
-            d = finddir(tr[1],&dirlist);
-            if(removedir(d,&dirlist))
-                printf("removed %s",tr[1]);
-            else printf("could not removve %s",tr[1]);
+    }
+    else if (strcmp(tr[0], "-clear") == 0) {
+        freedirlist(dirlist);
+        printf("Directory list cleared\n");
+    }
+    else if (strcmp(tr[0], "-path") == 0) {
+        char *path_env = getenv("PATH");
+        if (path_env == NULL) {
+            printf("Error: PATH environment variable is not set\n");
+            return;
         }
-        else printf("error,bad addres");
 
-    } else if (strcmp(tr[0], "-clear") == 0) {
-            freedirlist(dirlist);
-    }
-    else if(strcmp(tr[0],"-path") == 0){
-        tdirectory d;
-        if(tr[1] != NULL) {
-            strcpy(d.dirname, tr[1]);
-            adddir(d,&dirlist);
+        char *path_copy = strdup(path_env);
+        if (path_copy == NULL) {
+            printf("Error: Memory allocation failed\n");
+            return;
         }
-        else
-            printf("error, bad address");
+
+        char *token = strtok(path_copy, ":");
+        while (token != NULL) {
+            tdirectory d;
+            strncpy(d.dirname, token, sizeof(d.dirname) - 1);
+            d.dirname[sizeof(d.dirname) - 1] = '\0';
+
+            if (!adddir(d, &dirlist)) {
+                printf("Warning: Could not add directory from PATH: %s\n", token);
+            }
+
+            token = strtok(NULL, ":");
+        }
+
+        free(path_copy);
+        printf("Imported directories from PATH into the search list\n");
     }
-    else printf("error, invalid argument");
+    else {
+        printf("Error: Invalid argument: %s\n", tr[0]);
+    }
 }
 
 
 
+void listjobs(char *tr[]){
+    printproclist(proclist);
+}
 
-
-
-
+void deljob(char *tr[]){
+    printf("callate");
+}
 
 //----------------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
