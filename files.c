@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <pwd.h>
 #include <unistd.h>
 
 bool createNode(tPos *p){
@@ -13,6 +16,11 @@ bool createNode(tPos *p){
 }
 
 bool createNodem(mPos *p){
+    *p = malloc(sizeof(struct mNode)); //allocates memory for a new node
+    return *p != NULL; //if memory allocation was successful return true, else return false
+}
+
+bool createNoded(dPos *p){
     *p = malloc(sizeof(struct mNode)); //allocates memory for a new node
     return *p != NULL; //if memory allocation was successful return true, else return false
 }
@@ -279,10 +287,20 @@ void createproclist(tproclist *plist){
 bool isemptyproc(tproclist plist){
     return plist == NULL;
 }
-bool addproc(tprocess data,tproclist *plist){
-    pPos q, p;
 
-    q->data = data;
+bool addproc(int pid,char* date,char *comline, tproclist *plist){
+    pPos q = (pPos)malloc(sizeof(struct pNode)), p;
+    if (q == NULL) {
+        perror("Memory allocation failed");
+        return false;
+    }
+
+    q->data.PID = pid;
+    strncpy(q->data.date, date, sizeof(q->data.date) - 1);
+
+    q->data.state = ACTIVE;
+    strncpy(q->data.comline, comline, sizeof(q->data.comline) - 1);
+
     q->next = NULL;
 
     if (plist == NULL) {
@@ -318,7 +336,65 @@ void freeproclist(tproclist plist){
     free(plist);
 }
 
+char* getusr(int pid){
+    char path[256];
+    char line[256];
+    struct stat fileStat;
+    FILE *file;
+    int uid = -1;
+
+    snprintf(path,sizeof(path),"/proc/%d/status",pid);
+    file = fopen(path, "r");
+    if (file == NULL) {
+        perror("Error opening process status file");
+        return "****";
+    }
+
+    while (fgets(line, sizeof(line), file)) {
+        if (lstat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+            return "error";
+        }
+    }
+    fclose(file);
+
+    if (uid == -1) {
+        printf("Could not find UID for process %d\n", pid);
+        return "****";
+    }
+
+
+    if (lstat(path, &fileStat) == -1) { //stat gives us information aboutr the file in question
+        return "error";
+    }
+
+    struct passwd *pws = getpwuid(fileStat.st_uid);//
+    if (pws == NULL) {
+        fprintf(stderr, "No user found for UID: %d\n", uid);
+        return strdup("UNKNOWN"); // Return a dynamically allocated fallback
+    }
+    else
+    return strdup(pws->pw_name);
+}
+
+void printproclist(tproclist plist){
+        pPos p;
+        if (!isemptyproc(plist)) {
+            for (p = plist; p != NULL; p = p->next) {
+                printf("%d %s p=%d %s %d %s %s\n", p->data.PID,getusr(p->data.PID),getpriority(PRIO_PROCESS,p->data.PID),p->data.date,p->data.state,p->data.comline,"command_name");
+            }
+        }
+
+}
+
+
 //-------------------Search list-------------
+
+dPos SearchListFirst(tdirlist list){
+    return list;
+}
+dPos SearchListNext(dPos pos){
+    return pos->next;
+}
 
 void createdirlist(tdirlist *dlist){
     *dlist = NULL;
@@ -328,13 +404,12 @@ bool isemptydir(tdirlist dlist){
     return dlist == NULL;
 }
 
-#include <stdlib.h>  // For malloc
 
 bool adddir(tdirectory data, tdirlist *dlist) {
-    // Allocate memory for q
-    dPos q = (dPos)malloc(sizeof(*q));  // Allocate memory for the new node
 
-    if (q == NULL) {  // Check if memory allocation failed
+    dPos q = (dPos)malloc(sizeof(*q));
+
+    if (q == NULL) {
         return false;
     }
 
