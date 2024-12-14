@@ -28,8 +28,7 @@ typedef struct process{
     int PID;
     char date[MAX];
     enum status state;
-    char comline[MAX];
-    int priority;
+    char* comline;
 }tprocess;
 
 typedef struct directory{
@@ -96,10 +95,13 @@ void FreeMemList(tmemlist);
 
 void createproclist(tproclist*);
 bool isemptyproc(tproclist);
-bool addproc(tprocess,tproclist*);
+bool addproc(int,char*,char*,tproclist*);
+void printproclist(tproclist);
 pPos findproc(int pid, tproclist*);
 void freeproclist(tproclist);
 
+dPos SearchListFirst(tdirlist);
+dPos SearchListNext();
 void createdirlist(tdirlist*);
 bool isemptydir(tdirlist);
 bool adddir(tdirectory,tdirlist *);
