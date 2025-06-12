@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-SRCS = p2.c files.c List.c
-OBJS = p2.o files.o List.o
+SRCS = main.c files.c List.c
+OBJS = main.o files.o List.o
 HEADERS = files.h List.h
-TARGET = p2
+TARGET = main
 
 all: $(TARGET)
 
